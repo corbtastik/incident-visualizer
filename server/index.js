@@ -1,4 +1,4 @@
-// server/index.js (ESM, generic _id cursors)
+// server/index.js (ESM, ObjectId-only cursor)
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -9,54 +9,13 @@ const DB_NAME = process.env.DB_NAME || 'incidents';
 const PORT = process.env.PORT || 4000;
 const DEBUG = process.env.DEBUG_LIVE === '1';
 
-// category -> collection
 const collByCategory = {
   infrastructure: 'infrastructure_events',
 };
 
-/* ----------------------------- helpers ----------------------------- */
-
-// Encode any _id into a string cursor.
-// - ObjectId -> 24-hex
-// - anything else -> JSON string (stable and reversible)
-function encodeIdForCursor(id) {
-  if (!id) return null;
-  if (typeof id === 'object' && typeof id.toHexString === 'function') {
-    return id.toHexString();
-  }
-  if (typeof id === 'object' && typeof id.$oid === 'string') {
-    return id.$oid;
-  }
-  // Fallback: JSON string of the raw value (e.g., { "_data": "..." })
-  try {
-    return JSON.stringify(id);
-  } catch {
-    // Last resort: do NOT return String(id) (would become "[object Object]")
-    return null;
-  }
-}
-
-// Decode the cursor string back into a value usable in a MongoDB query.
-function decodeCursorToId(cursor) {
-  if (!cursor) throw new Error('Missing cursor');
-  // Plain 24-hex ObjectId?
-  if (typeof cursor === 'string' && /^[a-fA-F0-9]{24}$/.test(cursor)) {
-    return new ObjectId(cursor);
-  }
-  // Otherwise expect JSON string for non-ObjectId _id
-  try {
-    const parsed = JSON.parse(cursor);
-    return parsed; // raw value (e.g., { "_data": "..." })
-  } catch {
-    throw new Error('Invalid after cursor');
-  }
-}
-
 function redact(uri) {
   return (uri || '').replace(/(mongodb\+srv:\/\/)([^:]+):([^@]+)@/i, '$1***:***@');
 }
-
-/* ------------------------------ server ----------------------------- */
 
 async function main() {
   if (!MONGODB_URI) {
@@ -88,120 +47,78 @@ async function main() {
     }
   });
 
-  // Debug: show counts + min/max _id (as encoded cursors)
+  // Optional debug: min/max _id
   app.get('/debug/:category', async (req, res) => {
     try {
-      const { category } = req.params;
-      const collName = collByCategory[category];
+      const collName = collByCategory[req.params.category];
       if (!collName) return res.status(400).json({ error: 'Unsupported category' });
-
       const coll = db.collection(collName);
-      const [estCount, exactCount, newestDoc, oldestDoc] = await Promise.all([
-        coll.estimatedDocumentCount(),
+
+      const [count, newest, oldest] = await Promise.all([
         coll.countDocuments({}),
         coll.find({}, { projection: { _id: 1 } }).sort({ _id: -1 }).limit(1).toArray(),
         coll.find({}, { projection: { _id: 1 } }).sort({ _id: 1 }).limit(1).toArray(),
       ]);
 
-      const newestId = newestDoc[0]?._id ?? null;
-      const oldestId = oldestDoc[0]?._id ?? null;
-
       res.json({
         namespace: `${DB_NAME}.${collName}`,
-        estimatedDocumentCount: estCount,
-        countDocuments: exactCount,
-        newestId: encodeIdForCursor(newestId),
-        oldestId: encodeIdForCursor(oldestId),
+        countDocuments: count,
+        newestId: newest[0]?._id?.toHexString() || null,
+        oldestId: oldest[0]?._id?.toHexString() || null,
         serverTime: new Date().toISOString(),
       });
     } catch (e) {
-      console.error('[DEBUG] error', e);
       res.status(500).json({ error: 'Debug failed', detail: e?.message });
     }
   });
 
-  // Live tail endpoint using generic _id cursor
+  // Live tail using ObjectId cursor
   app.get('/live/:category', async (req, res) => {
-    const t0 = Date.now();
     try {
-      const { category } = req.params;
-      const { after, limit } = req.query;
-
-      const collName = collByCategory[category];
+      const collName = collByCategory[req.params.category];
       if (!collName) return res.status(400).json({ error: 'Unsupported category' });
 
       const coll = db.collection(collName);
-      const max = Math.min(Number(limit) || 500, 5000);
+      const max = Math.min(Number(req.query.limit) || 500, 2000);
+      const { after } = req.query;
 
-      // Initialization: no 'after' -> start from newest existing doc
       if (!after) {
-        const newestDoc = await coll
-          .find({}, { projection: { _id: 1 } })
-          .sort({ _id: -1 })
-          .limit(1)
-          .toArray();
+        const newest = await coll.find({}, { projection: { _id: 1 } })
+          .sort({ _id: -1 }).limit(1).toArray();
 
-        if (!newestDoc.length) {
-          const payload = {
-            items: [],
-            nextCursor: null,
-            empty: true,
-            count: 0,
-            serverTime: new Date().toISOString(),
-          };
-          if (DEBUG) console.log('[INIT empty]', payload);
-          return res.json(payload);
+        if (!newest.length) {
+          return res.json({ items: [], nextCursor: null, empty: true, count: 0, serverTime: new Date().toISOString() });
         }
 
-        const initCursor = encodeIdForCursor(newestDoc[0]._id);
-        const payload = {
+        return res.json({
           items: [],
-          nextCursor: initCursor, // start from "now"
+          nextCursor: newest[0]._id.toHexString(),
           count: 0,
           serverTime: new Date().toISOString(),
-        };
-        if (DEBUG) console.log('[INIT ok]', payload);
-        return res.json(payload);
+        });
       }
 
-      // Parse 'after' back to a value suitable for {$gt: ...}
-      let afterVal;
+      let afterId;
       try {
-        afterVal = decodeCursorToId(after);
-      } catch (e) {
-        if (DEBUG) console.error('[ERROR] Invalid after', after);
-        return res.status(400).json({ error: 'Invalid after cursor' });
+        afterId = new ObjectId(after);
+      } catch {
+        return res.status(400).json({ error: 'Invalid after ObjectId' });
       }
 
-      // Strictly newer than 'after'
-      const docs = await coll
-        .find({ _id: { $gt: afterVal } }, { projection: { _id: 1, city: 1, lat: 1, lng: 1, weight: 1, sigmaKm: 1, serviceIssue: 1 } })
+      const docs = await coll.find(
+        { _id: { $gt: afterId } },
+        { projection: { _id: 1, city: 1, lat: 1, lng: 1, sigmaKm: 1, weight: 1, serviceIssue: 1, ts: 1 } }
+      )
         .sort({ _id: 1 })
         .limit(max)
         .toArray();
 
-      const items = docs.map(({ _id, ...rest }) => ({
-        // we don't need to expose _id, but if you want it visible, encode it
-        _id: encodeIdForCursor(_id),
-        ...rest,
-      }));
+      const items = docs.map(({ _id, ...rest }) => ({ _id: _id.toHexString(), ...rest }));
+      const nextCursor = items.length ? items[items.length - 1]._id : afterId.toHexString();
 
-      const lastId = docs.length ? docs[docs.length - 1]._id : afterVal;
-      const nextCursor = encodeIdForCursor(lastId);
+      if (DEBUG) console.log(`[LIVE ${req.params.category}] sent=${items.length}`);
 
-      const payload = {
-        items,
-        nextCursor,
-        count: items.length,
-        serverTime: new Date().toISOString(),
-      };
-      if (DEBUG) {
-        console.log(
-          `[LIVE ${category}] after=${typeof afterVal?.toHexString === 'function' ? afterVal.toHexString() : JSON.stringify(afterVal)} ` +
-          `count=${items.length} next=${nextCursor} in ${Date.now() - t0}ms`
-        );
-      }
-      return res.json(payload);
+      res.json({ items, nextCursor, count: items.length, serverTime: new Date().toISOString() });
     } catch (err) {
       console.error('GET /live error:', err);
       res.status(500).json({ error: 'Internal error' });
