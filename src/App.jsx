@@ -4,6 +4,7 @@ import { Map } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
+import { useLiveStream } from './hooks/useLiveStream';
 import ControlPanel from './components/ControlPanel.jsx';
 
 // Removed: makeHeatmap/makeScatter and mockIncidents
@@ -30,7 +31,14 @@ export default function App() {
     collapsed: false
   });
 
-  // Poll backend (skip when no filters selected)
+  // ---- NEW: live feed from infrastructure_events (no rendering yet) ----
+  const {
+    items: infraEvents,
+    status: infraStatus,
+    cursor: infraCursor
+  } = useLiveStream({ category: 'infrastructure', intervalMs: 5000, cap: 10000 });
+
+  // Existing polling (based on your selected types) — leaving as-is for now.
   useEffect(() => {
     let mounted = true;
 
@@ -74,6 +82,9 @@ export default function App() {
 
   const styleUrl = state.baseMap === 'dark' ? DARK : LIGHT;
 
+  // Small helper to peek at the latest infra event (safe + trimmed)
+  const latestInfra = infraEvents.length ? infraEvents[infraEvents.length - 1] : null;
+
   return (
     <div className="map-root">
       {/* Full-height left docked controls */}
@@ -85,6 +96,57 @@ export default function App() {
           Incidents in View: {incidents.length.toLocaleString()}
         </span>
         <span className="pill">Window: {state.windowSec}s</span>
+      </div>
+
+      {/* NEW: Minimal debug for the live infrastructure feed */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          zIndex: 5,
+          padding: '10px 12px',
+          background: 'rgba(20,20,25,0.75)',
+          color: 'white',
+          borderRadius: 12,
+          fontSize: 12,
+          lineHeight: 1.4,
+          maxWidth: 360,
+          backdropFilter: 'blur(4px)'
+        }}
+      >
+        <div style={{ fontWeight: 600, marginBottom: 6 }}>Infrastructure Live Feed</div>
+        <div>Status: {infraStatus}</div>
+        <div>Buffer size: {infraEvents.length.toLocaleString()}</div>
+        <div style={{ wordBreak: 'break-all' }}>
+          <div>Cursor: {infraCursor ? String(infraCursor) : '—'}</div>
+        </div>
+        {latestInfra && (
+          <details style={{ marginTop: 6 }}>
+            <summary>Latest event preview</summary>
+            <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+              {JSON.stringify(
+                {
+                  _id: latestInfra._id,
+                  city: latestInfra.city,
+                  lat: latestInfra.lat,
+                  lng: latestInfra.lng,
+                  weight: latestInfra.weight,
+                  sigmaKm: latestInfra.sigmaKm,
+                  serviceIssue: latestInfra.serviceIssue
+                    ? {
+                        type: latestInfra.serviceIssue.type,
+                        category: latestInfra.serviceIssue.category,
+                        issue: latestInfra.serviceIssue.issue
+                      }
+                    : undefined
+                },
+                null,
+                2
+              )}
+            </pre>
+          </details>
+        )}
       </div>
 
       {/* Map canvas */}

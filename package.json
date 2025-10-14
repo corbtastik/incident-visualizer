@@ -7,14 +7,19 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "server": "node server/index.js"
   },
   "dependencies": {
     "@deck.gl/aggregation-layers": "^8.9.36",
     "@deck.gl/layers": "^8.9.36",
     "@deck.gl/react": "^8.9.36",
     "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
     "maplibre-gl": "^4.7.1",
+    "mongodb": "^6.20.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-map-gl": "^7.1.6",
