@@ -19,36 +19,28 @@ export default function App() {
   const [incidents, setIncidents] = useState([]);
   const [timeline, setTimeline] = useState([]);
 
-  // Keep state shape mostly the same for ControlPanel compatibility,
-  // but remove cityQuery and any zoom handlers.
+  // Default filters to NONE selected
   const [state, setState] = useState({
     layer: 'heatmap',
     radius: 30,
     baseMap: 'dark',
     colorRamp: 'cool',
-    types: new Set([
-      'wireless',
-      'fiber',
-      'enterprise',
-      'broadband',
-      'wifi-hotspot',
-      'iot',
-      'satellite',
-      'smart-city',
-      'public-safety',
-      'backhaul',
-      'edge',
-      'datacenter',
-      'cloud-network'
-    ]),
+    types: new Set(), // none selected by default
     windowSec: 60,
     collapsed: false
   });
 
-  // Poll backend (no mocks on failure)
+  // Poll backend (skip when no filters selected)
   useEffect(() => {
     let mounted = true;
+
     async function loop() {
+      // Optimization: if no types selected, clear and skip fetch
+      if (state.types.size === 0) {
+        if (mounted) setIncidents([]);
+        return;
+      }
+
       try {
         const res = await fetchIncidents({
           types: Array.from(state.types),
@@ -59,6 +51,7 @@ export default function App() {
         if (mounted) setIncidents([]); // no mock fallback
       }
     }
+
     loop();
     const id = setInterval(loop, 1000);
     return () => {
