@@ -20,8 +20,8 @@ function pretty(label) {
   return label.replace(/\b\w/g, c => c.toUpperCase()).replace('-', ' ');
 }
 
-export default function ControlPanel({ state, setState, onZoomUS, onZoomCity }) {
-  const { layer, radius, baseMap, colorRamp, types, cityQuery } = state;
+export default function ControlPanel({ state, setState }) {
+  const { layer, radius, baseMap, colorRamp, types } = state;
   const flatByOrder = useMemo(() => GROUPS.flatMap(g => g.items), []);
 
   const toggleType = (t) => {
@@ -78,18 +78,6 @@ export default function ControlPanel({ state, setState, onZoomUS, onZoomCity }) 
                 <option value="inferno">Inferno</option>
               </select>
             </label>
-          </div>
-
-          {/* Stacked search + blue button */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:10, marginTop:12 }}>
-            <input
-              type="text"
-              placeholder="Zoom to City (Enter)"
-              value={cityQuery}
-              onChange={e=>setState(s=>({...s, cityQuery:e.target.value}))}
-              onKeyDown={e=> e.key==='Enter' && onZoomCity()}
-            />
-            <button className="btn btn-primary" onClick={onZoomUS}>Zoom to US</button>
           </div>
 
           {/* Filters */}

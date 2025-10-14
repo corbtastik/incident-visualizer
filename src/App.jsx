@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import DeckGL from '@deck.gl/react';
 import { Map } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
@@ -10,29 +10,39 @@ import ControlPanel from './components/ControlPanel.jsx';
 import { fetchIncidents } from './api.js';
 import { countsByType as computeCounts } from './utils/stats.js';
 
-const DARK = import.meta.env.VITE_MAP_STYLE_URL || 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const DARK =
+  import.meta.env.VITE_MAP_STYLE_URL ||
+  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const LIGHT = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 
 export default function App() {
-  const mapRef = useRef(null);
   const [incidents, setIncidents] = useState([]);
   const [timeline, setTimeline] = useState([]);
 
-  // Keep state shape the same for ControlPanel compatibility,
-  // but we won’t render any layers yet.
+  // Keep state shape mostly the same for ControlPanel compatibility,
+  // but remove cityQuery and any zoom handlers.
   const [state, setState] = useState({
     layer: 'heatmap',
     radius: 30,
     baseMap: 'dark',
     colorRamp: 'cool',
     types: new Set([
-      'wireless','fiber','enterprise','broadband','wifi-hotspot','iot',
-      'satellite','smart-city','public-safety','backhaul','edge',
-      'datacenter','cloud-network'
+      'wireless',
+      'fiber',
+      'enterprise',
+      'broadband',
+      'wifi-hotspot',
+      'iot',
+      'satellite',
+      'smart-city',
+      'public-safety',
+      'backhaul',
+      'edge',
+      'datacenter',
+      'cloud-network'
     ]),
     windowSec: 60,
-    collapsed: false,
-    cityQuery: ''
+    collapsed: false
   });
 
   // Poll backend (no mocks on failure)
@@ -51,7 +61,10 @@ export default function App() {
     }
     loop();
     const id = setInterval(loop, 1000);
-    return () => { mounted = false; clearInterval(id); };
+    return () => {
+      mounted = false;
+      clearInterval(id);
+    };
   }, [state.types, state.windowSec]);
 
   const counts = useMemo(
@@ -66,39 +79,18 @@ export default function App() {
   // No deck.gl layers for now
   const layers = useMemo(() => [], []);
 
-  const onZoomUS = () => {
-    mapRef.current?.flyTo({ center: [-96.5, 39.8], zoom: 3.5, speed: 0.8 });
-  };
-
-  const onZoomCity = async () => {
-    const q = state.cityQuery?.trim();
-    if (!q) return;
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', USA')}`;
-      const res = await fetch(url);
-      const js = await res.json();
-      if (js?.length) {
-        const { lon, lat } = js[0];
-        mapRef.current?.flyTo({ center: [Number(lon), Number(lat)], zoom: 9, speed: 0.8 });
-      }
-    } catch {}
-  };
-
   const styleUrl = state.baseMap === 'dark' ? DARK : LIGHT;
 
   return (
     <div className="map-root">
       {/* Full-height left docked controls */}
-      <ControlPanel
-        state={state}
-        setState={setState}
-        onZoomUS={onZoomUS}
-        onZoomCity={onZoomCity}
-      />
+      <ControlPanel state={state} setState={setState} />
 
       {/* Bottom-right pills */}
       <div className="bottom-pills">
-        <span className="pill">Incidents in View: {incidents.length.toLocaleString()}</span>
+        <span className="pill">
+          Incidents in View: {incidents.length.toLocaleString()}
+        </span>
         <span className="pill">Window: {state.windowSec}s</span>
       </div>
 
@@ -108,9 +100,11 @@ export default function App() {
           initialViewState={{ longitude: -98, latitude: 39, zoom: 3 }}
           controller={true}
           layers={layers}
-          getTooltip={({ object }) => object && `${object.serviceIssue?.type || 'unknown'}`}
+          getTooltip={({ object }) =>
+            object && `${object.serviceIssue?.type || 'unknown'}`
+          }
         >
-          <Map ref={mapRef} reuseMaps mapLib={maplibregl} mapStyle={styleUrl} />
+          <Map reuseMaps mapLib={maplibregl} mapStyle={styleUrl} />
         </DeckGL>
       </div>
     </div>

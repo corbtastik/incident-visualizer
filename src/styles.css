@@ -29,30 +29,16 @@ body { background: var(--bg); color: var(--fg); }
 }
 .cp-body{ overflow:auto; padding:12px; }
 
-/* Inputs / buttons look & height consistency */
+/* Inputs look & height consistency */
 label { display:grid; gap:6px; font-size:12px; color:var(--muted); font-weight:600; }
-select, input[type='text'] {
+select {
   background: transparent;
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 10px 12px;         /* == button height */
+  padding: 10px 12px;
   height: 40px;               /* unified control height */
   outline: none;
-}
-.btn {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  /* padding: 10px 12px; */
-  height: 40px;               /* unified control height */
-  background: transparent;
-  color: var(--fg);
-  cursor: pointer;
-}
-.btn-primary {
-  background: var(--blue);
-  border-color: #1d4fe0;
-  color: #fff;
 }
 
 /* Section titles + checkbox rows */
