@@ -4,10 +4,10 @@ import { Map } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import { useLiveStream } from './hooks/useLiveStream';
 import ControlPanel from './components/ControlPanel.jsx';
+import LiveFeeds from './components/LiveFeeds.jsx';
 
-// Removed: makeHeatmap/makeScatter and mockIncidents
+// Removed: useLiveStream (old infra-only feed)
 import { fetchIncidents } from './api.js';
 import { countsByType as computeCounts } from './utils/stats.js';
 
@@ -15,6 +15,7 @@ const DARK =
   import.meta.env.VITE_MAP_STYLE_URL ||
   'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const LIGHT = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
 export default function App() {
   const [incidents, setIncidents] = useState([]);
@@ -30,13 +31,6 @@ export default function App() {
     windowSec: 60,
     collapsed: false
   });
-
-  // ---- NEW: live feed from infrastructure_events (no rendering yet) ----
-  const {
-    items: infraEvents,
-    status: infraStatus,
-    cursor: infraCursor
-  } = useLiveStream({ category: 'infrastructure', intervalMs: 5000, cap: 10000 });
 
   // Existing polling (based on your selected types) — leaving as-is for now.
   useEffect(() => {
@@ -61,7 +55,7 @@ export default function App() {
     }
 
     loop();
-    const id = setInterval(loop, 1000);
+    const id = setInterval(loop, 5000);
     return () => {
       mounted = false;
       clearInterval(id);
@@ -82,9 +76,6 @@ export default function App() {
 
   const styleUrl = state.baseMap === 'dark' ? DARK : LIGHT;
 
-  // Small helper to peek at the latest infra event (safe + trimmed)
-  const latestInfra = infraEvents.length ? infraEvents[infraEvents.length - 1] : null;
-
   return (
     <div className="map-root">
       {/* Full-height left docked controls */}
@@ -98,56 +89,8 @@ export default function App() {
         <span className="pill">Window: {state.windowSec}s</span>
       </div>
 
-      {/* NEW: Minimal debug for the live infrastructure feed */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 12,
-          right: 12,
-          zIndex: 5,
-          padding: '10px 12px',
-          background: 'rgba(20,20,25,0.75)',
-          color: 'white',
-          borderRadius: 12,
-          fontSize: 12,
-          lineHeight: 1.4,
-          maxWidth: 360,
-          backdropFilter: 'blur(4px)'
-        }}
-      >
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>Infrastructure Live Feed</div>
-        <div>Status: {infraStatus}</div>
-        <div>Buffer size: {infraEvents.length.toLocaleString()}</div>
-        <div style={{ wordBreak: 'break-all' }}>
-          <div>Cursor: {infraCursor ? String(infraCursor) : '—'}</div>
-        </div>
-        {latestInfra && (
-          <details style={{ marginTop: 6 }}>
-            <summary>Latest event preview</summary>
-            <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-              {JSON.stringify(
-                {
-                  _id: latestInfra._id,
-                  city: latestInfra.city,
-                  lat: latestInfra.lat,
-                  lng: latestInfra.lng,
-                  weight: latestInfra.weight,
-                  sigmaKm: latestInfra.sigmaKm,
-                  serviceIssue: latestInfra.serviceIssue
-                    ? {
-                        type: latestInfra.serviceIssue.type,
-                        category: latestInfra.serviceIssue.category,
-                        issue: latestInfra.serviceIssue.issue
-                      }
-                    : undefined
-                },
-                null,
-                2
-              )}
-            </pre>
-          </details>
-        )}
-      </div>
+      {/* NEW: Multi-category Live Feeds panel (replaces old infra-only widget) */}
+      <LiveFeeds apiBase={API_BASE} />
 
       {/* Map canvas */}
       <div className="map-canvas">
