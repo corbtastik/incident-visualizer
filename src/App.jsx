@@ -21,11 +21,25 @@ const slugify = (s) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+// Map UI slider (0..100) to pixel radius:
+//  - 50  -> 2px   (default / your preferred smallest)
+//  - 0   -> ~1px
+//  - 100 -> ~14px
+function uiToRadiusPx(u) {
+  const v = Math.max(0, Math.min(100, Number(u) || 0));
+  if (v <= 50) {
+    // 0..50 -> 1..2
+    return 1 + (2 - 1) * (v / 50);
+  }
+  // 50..100 -> 2..14
+  return 2 + (14 - 2) * ((v - 50) / 50);
+}
+
 export default function App() {
-  // Default: no types selected, all categories visible
+  // Default: slider at middle (50) which maps to 2px points; all categories visible
   const [state, setState] = useState({
     layer: 'heatmap',
-    radius: 30,
+    radius: 50, // UI slider value (0..100); 50 => 2px
     baseMap: 'dark',
     colorRamp: 'cool',
     types: new Set(),
@@ -47,7 +61,9 @@ export default function App() {
   const federalFeed        = useCategoryFeed({ baseUrl: API_BASE, category: 'federal',        intervalMs: 2000, pageSize: 200, cap: 8000 });
   const infraFeed          = useCategoryFeed({ baseUrl: API_BASE, category: 'infrastructure', intervalMs: 2000, pageSize: 200, cap: 8000 });
 
-  // Build layers (now with category visibility + type filtering)
+  const radiusPx = useMemo(() => uiToRadiusPx(state.radius), [state.radius]);
+
+  // Build layers (now with category visibility + type filtering + new radius scale)
   const layers = useMemo(() => {
     return makeCategoryScatterLayers(
       {
@@ -57,7 +73,7 @@ export default function App() {
         federal:        federalFeed.data,
         infrastructure: infraFeed.data
       },
-      { radius: state.radius, types: state.types, categories: state.categories }
+      { radiusPx, types: state.types, categories: state.categories }
     );
   }, [
     businessFeed.data,
@@ -65,7 +81,7 @@ export default function App() {
     emergingTechFeed.data,
     federalFeed.data,
     infraFeed.data,
-    state.radius,
+    radiusPx,
     state.types,
     state.categories
   ]);
@@ -95,23 +111,6 @@ export default function App() {
   ]);
 
   const styleUrl = state.baseMap === 'dark' ? DARK : LIGHT;
-
-  // Debug probes (handy while iterating)
-  useEffect(() => {
-    console.debug('[ASP] sizes', {
-      business: businessFeed.data.length,
-      consumer: consumerFeed.data.length,
-      emerging_tech: emergingTechFeed.data.length,
-      federal: federalFeed.data.length,
-      infrastructure: infraFeed.data.length
-    });
-  }, [
-    businessFeed.data,
-    consumerFeed.data,
-    emergingTechFeed.data,
-    federalFeed.data,
-    infraFeed.data
-  ]);
 
   return (
     <div className="map-root">

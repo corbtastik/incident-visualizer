@@ -92,11 +92,11 @@ export default function ControlPanel({ state, setState }) {
             </label>
 
             <label>
-              <span>Radius</span>
+              <span>Point Size</span>
               <input
                 type="range"
-                min={2}
-                max={80}
+                min={0}
+                max={100}
                 value={radius}
                 onChange={e=>setState(s=>({...s, radius:Number(e.target.value)}))}
               />

@@ -4,7 +4,7 @@ import { ScatterplotLayer } from "@deck.gl/layers";
 export const CAT_COLOR = {
   business:       [66, 153, 225, 200],  // blue
   consumer:       [16, 185, 129, 200],  // teal/green
-  emerging_tech:  [168, 85, 247, 200],  // 🔄 purple (was yellow)
+  emerging_tech:  [168, 85, 247, 200],  // purple
   federal:        [244, 114, 182, 200], // pink
   infrastructure: [250, 204, 21, 200],  // yellow
 };
@@ -23,9 +23,9 @@ function filterByTypes(data, typesSet) {
 /**
  * Build one ScatterplotLayer per category.
  * @param feeds { business, consumer, emerging_tech, federal, infrastructure }
- * @param opts { radius, types, categories }
+ * @param opts { radiusPx, types, categories }
  */
-export function makeCategoryScatterLayers(feeds, { radius = 30, types, categories }) {
+export function makeCategoryScatterLayers(feeds, { radiusPx = 2, types, categories }) {
   return Object.entries(feeds).map(([key, data]) => {
     const filtered = filterByTypes(data, types);
     const visible = !!(categories?.[key]); // master category toggle
@@ -35,13 +35,13 @@ export function makeCategoryScatterLayers(feeds, { radius = 30, types, categorie
       data: filtered,
       visible,
       pickable: true,
-      radiusMinPixels: radius,
-      radiusMaxPixels: Math.max(radius * 2, 60),
+      radiusMinPixels: radiusPx,
+      radiusMaxPixels: Math.max(radiusPx * 2, 6), // keep modest; never huge
       getPosition: (d) => [d.lng, d.lat],
       getFillColor: CAT_COLOR[key] || [200, 200, 200, 200],
       stroked: false,
       parameters: { depthTest: false },
-      updateTriggers: { data: filtered, radius, visible },
+      updateTriggers: { data: filtered, radiusPx, visible },
     });
   });
 }
