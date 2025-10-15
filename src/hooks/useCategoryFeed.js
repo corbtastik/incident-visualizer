@@ -5,15 +5,21 @@ import { useEffect, useRef, useState } from "react";
  * Polls /debug/:category once to grab newestId as the starting cursor,
  * then tails /live/:category?after=<cursor> for new docs.
  *
- * Contract expected from server:
- *   GET /debug/:category -> { newestId }
- *   GET /live/:category?after=<ObjectId>&limit=<n> -> { docs, nextAfter }
+ * Now also accumulates a rolling `data` buffer (capped) so
+ * map layers can render the same stream the Live Feeds panel uses.
  */
-export function useCategoryFeed({ baseUrl, category, intervalMs = 2000, pageSize = 200 }) {
+export function useCategoryFeed({
+  baseUrl,
+  category,
+  intervalMs = 2000,
+  pageSize = 200,
+  cap = 8000
+}) {
   const [status, setStatus] = useState("idle"); // "idle" | "ok" | "error"
   const [error, setError] = useState(null);
   const [count, setCount] = useState(0);
   const [lastEvent, setLastEvent] = useState(null);
+  const [data, setData] = useState([]); // NEW: rolling buffer for map layers
 
   const cursorRef = useRef(null);
   const timerRef = useRef(null);
@@ -40,7 +46,7 @@ export function useCategoryFeed({ baseUrl, category, intervalMs = 2000, pageSize
         setError(null);
 
         // 1) Get newestId so we don’t backfill the whole collection
-        const debugRes = await fetch(`${baseUrl}/debug/${category}`);
+        const debugRes = await fetch(`${baseUrl}/debug/${category}`, { cache: "no-store" });
         if (!debugRes.ok) throw new Error(`Debug ${category} failed: ${debugRes.status}`);
         const debugJson = await debugRes.json();
         cursorRef.current = debugJson?.newestId || null;
@@ -55,7 +61,6 @@ export function useCategoryFeed({ baseUrl, category, intervalMs = 2000, pageSize
     }
 
     async function loop() {
-      // cleanup any prior request
       if (abortRef.current) abortRef.current.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
@@ -67,22 +72,34 @@ export function useCategoryFeed({ baseUrl, category, intervalMs = 2000, pageSize
           params.set("limit", String(pageSize));
 
           const res = await fetch(`${baseUrl}/live/${category}?` + params.toString(), {
-            signal: ctrl.signal
+            signal: ctrl.signal,
+            cache: "no-store"
           });
+
           if (!res.ok) throw new Error(`Live ${category} ${res.status}`);
 
-          const json = await res.json();
-          const docs = json?.docs || [];
+          // guard against proxies returning 304 with empty body
+          const text = await res.text();
+          const json = text ? JSON.parse(text) : { docs: [] };
+
+          const docs = Array.isArray(json?.docs) ? json.docs : [];
 
           if (docs.length > 0) {
             const nextAfter = json?.nextAfter || (docs[docs.length - 1]?._id ?? cursorRef.current);
             cursorRef.current = nextAfter;
 
+            // update Live Feeds counters
             setCount((c) => c + docs.length);
             setLastEvent(docs[docs.length - 1] || null);
+
+            // NEW: append to rolling data buffer for layers
+            setData((prev) => {
+              const merged = [...prev, ...docs];
+              return merged.length > cap ? merged.slice(merged.length - cap) : merged;
+            });
+
             setStatus("ok");
           } else {
-            // no new docs—still healthy but idle
             setStatus("idle");
           }
         } catch (e) {
@@ -90,7 +107,6 @@ export function useCategoryFeed({ baseUrl, category, intervalMs = 2000, pageSize
           setStatus("error");
           setError(e?.message || String(e));
         } finally {
-          // schedule next tick
           if (mounted) loop();
         }
       }, intervalMs);
@@ -103,12 +119,13 @@ export function useCategoryFeed({ baseUrl, category, intervalMs = 2000, pageSize
       if (timerRef.current) clearTimeout(timerRef.current);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [baseUrl, category, intervalMs, pageSize]);
+  }, [baseUrl, category, intervalMs, pageSize, cap]);
 
   return {
-    status,       // "ok" | "idle" | "error"
+    status,            // "ok" | "idle" | "error"
     error,
     count,
     lastEventPreview: toPreview(lastEvent),
+    data              // <-- NEW: docs for plotting
   };
 }
