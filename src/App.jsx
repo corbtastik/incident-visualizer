@@ -15,7 +15,6 @@ const DARK =
 const LIGHT = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
-// helper used in a couple spots
 const slugify = (s) =>
   String(s || '')
     .toLowerCase()
@@ -23,25 +22,32 @@ const slugify = (s) =>
     .replace(/^-+|-+$/g, '');
 
 export default function App() {
-  // Default filters to NONE selected
+  // Default: no types selected, all categories visible
   const [state, setState] = useState({
     layer: 'heatmap',
     radius: 30,
     baseMap: 'dark',
     colorRamp: 'cool',
-    types: new Set(), // none selected by default
-    windowSec: 60,    // kept for UI (not used by streams)
+    types: new Set(),
+    categories: {
+      business: true,
+      consumer: true,
+      emerging_tech: true,
+      federal: true,
+      infrastructure: true
+    },
+    windowSec: 60,
     collapsed: false
   });
 
-  // --- Reuse the SAME hook as Live Feeds for map data ---
+  // Use SAME feed hook as Live Feeds so plotting == panel data
   const businessFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'business',       intervalMs: 2000, pageSize: 200, cap: 8000 });
   const consumerFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'consumer',       intervalMs: 2000, pageSize: 200, cap: 8000 });
   const emergingTechFeed   = useCategoryFeed({ baseUrl: API_BASE, category: 'emerging_tech',  intervalMs: 2000, pageSize: 200, cap: 8000 });
   const federalFeed        = useCategoryFeed({ baseUrl: API_BASE, category: 'federal',        intervalMs: 2000, pageSize: 200, cap: 8000 });
   const infraFeed          = useCategoryFeed({ baseUrl: API_BASE, category: 'infrastructure', intervalMs: 2000, pageSize: 200, cap: 8000 });
 
-  // Build layers (respect left-panel type filters; filter logic lives in layers/index.js)
+  // Build layers (now with category visibility + type filtering)
   const layers = useMemo(() => {
     return makeCategoryScatterLayers(
       {
@@ -51,7 +57,7 @@ export default function App() {
         federal:        federalFeed.data,
         infrastructure: infraFeed.data
       },
-      { radius: state.radius, types: state.types }
+      { radius: state.radius, types: state.types, categories: state.categories }
     );
   }, [
     businessFeed.data,
@@ -60,21 +66,21 @@ export default function App() {
     federalFeed.data,
     infraFeed.data,
     state.radius,
-    state.types
+    state.types,
+    state.categories
   ]);
 
-  // Derive “Incidents in View” from currently visible points (filtered by selected types)
+  // Visible count respects both category toggles and type filters
   const visibleCount = useMemo(() => {
     if (state.types.size === 0) return 0;
     const wanted = new Set([...state.types].map(slugify));
-    const all = [
-      ...businessFeed.data,
-      ...consumerFeed.data,
-      ...emergingTechFeed.data,
-      ...federalFeed.data,
-      ...infraFeed.data
-    ];
-    return all.reduce((acc, d) => {
+    const pools = [];
+    if (state.categories.business)       pools.push(...businessFeed.data);
+    if (state.categories.consumer)       pools.push(...consumerFeed.data);
+    if (state.categories.emerging_tech)  pools.push(...emergingTechFeed.data);
+    if (state.categories.federal)        pools.push(...federalFeed.data);
+    if (state.categories.infrastructure) pools.push(...infraFeed.data);
+    return pools.reduce((acc, d) => {
       const t = slugify(d?.serviceIssue?.type);
       return acc + (t && wanted.has(t) ? 1 : 0);
     }, 0);
@@ -84,62 +90,33 @@ export default function App() {
     emergingTechFeed.data,
     federalFeed.data,
     infraFeed.data,
-    state.types
+    state.types,
+    state.categories
   ]);
 
   const styleUrl = state.baseMap === 'dark' ? DARK : LIGHT;
 
-  // -------------------------
-  // QUICK CONSOLE PROBES
-  // -------------------------
+  // Debug probes (handy while iterating)
   useEffect(() => {
-    const pick = (arr) => (arr && arr.length ? arr[arr.length - 1] : null);
-    const sample = (d) =>
-      d
-        ? {
-            _id: d._id,
-            city: d.city,
-            lat: d.lat,
-            lng: d.lng,
-            type: d?.serviceIssue?.type
-          }
-        : null;
-
-    console.debug('[ASP] API_BASE:', API_BASE);
-    console.debug('[ASP] stream sizes', {
+    console.debug('[ASP] sizes', {
       business: businessFeed.data.length,
       consumer: consumerFeed.data.length,
       emerging_tech: emergingTechFeed.data.length,
       federal: federalFeed.data.length,
       infrastructure: infraFeed.data.length
     });
-    console.debug('[ASP] last samples', {
-      business: sample(pick(businessFeed.data)),
-      consumer: sample(pick(consumerFeed.data)),
-      emerging_tech: sample(pick(emergingTechFeed.data)),
-      federal: sample(pick(federalFeed.data)),
-      infrastructure: sample(pick(infraFeed.data))
-    });
-    console.debug('[ASP] selected types (slugs):', [...state.types].map(slugify));
-    console.debug('[ASP] layers count:', layers.length, 'visibleCount:', visibleCount);
   }, [
     businessFeed.data,
     consumerFeed.data,
     emergingTechFeed.data,
     federalFeed.data,
-    infraFeed.data,
-    state.types,
-    layers.length,
-    visibleCount
+    infraFeed.data
   ]);
-  // -------------------------
 
   return (
     <div className="map-root">
-      {/* Full-height left docked controls */}
       <ControlPanel state={state} setState={setState} />
 
-      {/* Bottom-right pills */}
       <div className="bottom-pills">
         <span className="pill">
           Incidents in View: {visibleCount.toLocaleString()}
@@ -147,10 +124,8 @@ export default function App() {
         <span className="pill">Window: {state.windowSec}s</span>
       </div>
 
-      {/* Multi-category Live Feeds panel */}
       <LiveFeeds apiBase={API_BASE} />
 
-      {/* Map canvas */}
       <div className="map-canvas">
         <DeckGL
           initialViewState={{ longitude: -98, latitude: 39, zoom: 3 }}
