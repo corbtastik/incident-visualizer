@@ -45,3 +45,26 @@ select {
 .section-title { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color: var(--muted); margin: 12px 0 6px; }
 .group-title { font-weight:700; margin: 12px 0 6px; }
 .checkbox-row { display:flex; align-items:center; gap:8px; font-size:14px; color:var(--fg); }
+
+/* incident tooltip */
+.incident-tooltip {
+  position: absolute;
+  z-index: 1000;
+  background: #00ED64;           /* bg per spec */
+  color: #001E2B;                /* text per spec */
+  font-family: "Lexend Deca", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  white-space: nowrap;           /* no wrapping */
+  border-radius: 18px;           /* matches mock’s rounded feel */
+  padding: 14px 18px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+  border: 1px solid rgba(0,0,0,0.08);
+  font-size: 14px;
+}
+
+.incident-tooltip__title {
+  font-weight: 800;      
+  margin-bottom: 10px;
+  letter-spacing: 0.2px;
+  font-size: 16px;
+}
+

@@ -8,6 +8,9 @@ import ControlPanel from './components/ControlPanel.jsx';
 import LiveFeeds from './components/LiveFeeds.jsx';
 import { useCategoryFeed } from './hooks/useCategoryFeed';
 import { makeCategoryScatterLayers } from './layers/index.js';
+import TooltipSatellite from './components/TooltipSatellite.jsx';
+import TooltipIoT from './components/TooltipIoT.jsx';
+import TooltipSmartCity from './components/TooltipSmartCity.jsx';
 
 const DARK =
   import.meta.env.VITE_MAP_STYLE_URL ||
@@ -54,7 +57,10 @@ export default function App() {
     collapsed: false
   });
 
-  // Use SAME feed hook as Live Feeds so plotting == panel data
+  // Hover state for custom tooltips
+  const [hoverInfo, setHoverInfo] = useState(null);
+
+  // Feeds
   const businessFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'business',       intervalMs: 2000, pageSize: 200, cap: 8000 });
   const consumerFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'consumer',       intervalMs: 2000, pageSize: 200, cap: 8000 });
   const emergingTechFeed   = useCategoryFeed({ baseUrl: API_BASE, category: 'emerging_tech',  intervalMs: 2000, pageSize: 200, cap: 8000 });
@@ -63,7 +69,7 @@ export default function App() {
 
   const radiusPx = useMemo(() => uiToRadiusPx(state.radius), [state.radius]);
 
-  // Build layers (now with category visibility + type filtering + new radius scale)
+  // Layers
   const layers = useMemo(() => {
     return makeCategoryScatterLayers(
       {
@@ -86,7 +92,7 @@ export default function App() {
     state.categories
   ]);
 
-  // Visible count respects both category toggles and type filters
+  // Visible count
   const visibleCount = useMemo(() => {
     if (state.types.size === 0) return 0;
     const wanted = new Set([...state.types].map(slugify));
@@ -130,11 +136,42 @@ export default function App() {
           initialViewState={{ longitude: -98, latitude: 39, zoom: 3 }}
           controller={true}
           layers={layers}
-          getTooltip={({ object }) =>
-            object && `${object.serviceIssue?.type || 'unknown'}`
-          }
+
+          /* We're using custom overlays instead of DeckGL's string tooltip */
+          getTooltip={null}
+
+          /* Capture hover and keep only Emerging Tech (satellite/iot/smart-city) */
+          onHover={info => {
+            const obj = info && info.object;
+            const cat = obj?.serviceIssue?.category;
+            const typ = obj?.serviceIssue?.type;
+            if (
+              obj &&
+              cat === 'emerging_tech' &&
+              (typ === 'satellite' || typ === 'iot' || typ === 'smart-city')
+            ) {
+              setHoverInfo({ x: info.x, y: info.y, object: obj });
+            } else {
+              setHoverInfo(null);
+            }
+          }}
         >
           <Map reuseMaps mapLib={maplibregl} mapStyle={styleUrl} />
+
+          {/* Emerging Tech tooltips */}
+          {hoverInfo?.object && (() => {
+            const t = hoverInfo.object?.serviceIssue?.type;
+            if (t === 'satellite') return (
+              <TooltipSatellite x={hoverInfo.x} y={hoverInfo.y} incident={hoverInfo.object} />
+            );
+            if (t === 'iot') return (
+              <TooltipIoT x={hoverInfo.x} y={hoverInfo.y} incident={hoverInfo.object} />
+            );
+            if (t === 'smart-city') return (
+              <TooltipSmartCity x={hoverInfo.x} y={hoverInfo.y} incident={hoverInfo.object} />
+            );
+            return null;
+          })()}
         </DeckGL>
       </div>
     </div>
