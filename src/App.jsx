@@ -8,9 +8,7 @@ import ControlPanel from './components/ControlPanel.jsx';
 import LiveFeeds from './components/LiveFeeds.jsx';
 import { useCategoryFeed } from './hooks/useCategoryFeed';
 import { makeCategoryScatterLayers } from './layers/index.js';
-import TooltipSatellite from './components/TooltipSatellite.jsx';
-import TooltipIoT from './components/TooltipIoT.jsx';
-import TooltipSmartCity from './components/TooltipSmartCity.jsx';
+import TooltipIncident from './components/TooltipIncident.jsx';
 
 const DARK =
   import.meta.env.VITE_MAP_STYLE_URL ||
@@ -57,7 +55,7 @@ export default function App() {
     collapsed: false
   });
 
-  // Hover state for custom tooltips
+  // Hover state for custom tooltip
   const [hoverInfo, setHoverInfo] = useState(null);
 
   // Feeds
@@ -137,19 +135,13 @@ export default function App() {
           controller={true}
           layers={layers}
 
-          /* We're using custom overlays instead of DeckGL's string tooltip */
+          /* Using our custom overlay, not DeckGL's string tooltip */
           getTooltip={null}
 
-          /* Capture hover and keep only Emerging Tech (satellite/iot/smart-city) */
+          /* Capture hover for any incident; TooltipIncident will decide layout based on config */
           onHover={info => {
             const obj = info && info.object;
-            const cat = obj?.serviceIssue?.category;
-            const typ = obj?.serviceIssue?.type;
-            if (
-              obj &&
-              cat === 'emerging_tech' &&
-              (typ === 'satellite' || typ === 'iot' || typ === 'smart-city')
-            ) {
+            if (obj && obj.serviceIssue) {
               setHoverInfo({ x: info.x, y: info.y, object: obj });
             } else {
               setHoverInfo(null);
@@ -158,20 +150,14 @@ export default function App() {
         >
           <Map reuseMaps mapLib={maplibregl} mapStyle={styleUrl} />
 
-          {/* Emerging Tech tooltips */}
-          {hoverInfo?.object && (() => {
-            const t = hoverInfo.object?.serviceIssue?.type;
-            if (t === 'satellite') return (
-              <TooltipSatellite x={hoverInfo.x} y={hoverInfo.y} incident={hoverInfo.object} />
-            );
-            if (t === 'iot') return (
-              <TooltipIoT x={hoverInfo.x} y={hoverInfo.y} incident={hoverInfo.object} />
-            );
-            if (t === 'smart-city') return (
-              <TooltipSmartCity x={hoverInfo.x} y={hoverInfo.y} incident={hoverInfo.object} />
-            );
-            return null;
-          })()}
+          {/* Unified incident tooltip (config-driven) */}
+          {hoverInfo?.object && (
+            <TooltipIncident
+              x={hoverInfo.x}
+              y={hoverInfo.y}
+              incident={hoverInfo.object}
+            />
+          )}
         </DeckGL>
       </div>
     </div>
