@@ -51,17 +51,14 @@ function Dot({ rgba }) {
 // Helper: turn CAT_COLOR RGBA array into a good text color
 function rgbaForText(rgba = []) {
   const [r = 200, g = 200, b = 200] = rgba;
-  // full opacity for text so it reads cleanly on dark
   return `rgba(${r}, ${g}, ${b}, 1)`;
 }
 
 export default function ControlPanel({ state, setState }) {
-  // layer & colorRamp remain in state but are no longer rendered (Scatter is the default)
   const { layer, radius, baseMap, colorRamp, types, categories } = state;
 
   const flatByOrder = useMemo(() => GROUPS.flatMap(g => g.items), []);
   const allCatsOn   = useMemo(() => GROUPS.every(g => categories[g.key]), [categories]);
-  const anyCatsOn   = useMemo(() => GROUPS.some(g => categories[g.key]), [categories]);
 
   const toggleType = (t) => {
     const ns = new Set(types);
@@ -81,7 +78,6 @@ export default function ControlPanel({ state, setState }) {
       categories: GROUPS.reduce((acc, g) => (acc[g.key] = on, acc), {})
     }));
 
-  // Category label font size (slightly bigger than incident type rows)
   const CAT_LABEL_SIZE_PX = 18;
 
   return (
@@ -195,7 +191,11 @@ export default function ControlPanel({ state, setState }) {
               </div>
             );
           })}
+        </div>
 
+        {/* New footer with MongoDB Atlas logo */}
+        <div className="cp-footer">
+          <img src="/atlas-logo.svg" alt="MongoDB Atlas" />
         </div>
       </div>
     </div>
