@@ -49,6 +49,7 @@ function Dot({ rgba }) {
 }
 
 export default function ControlPanel({ state, setState }) {
+  // layer & colorRamp remain in state but are no longer rendered (Scatter is the default)
   const { layer, radius, baseMap, colorRamp, types, categories } = state;
 
   const flatByOrder = useMemo(() => GROUPS.flatMap(g => g.items), []);
@@ -81,19 +82,12 @@ export default function ControlPanel({ state, setState }) {
         </div>
 
         <div className="cp-body">
-          {/* Top controls */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <label>
-              <span>Layer</span>
-              <select value={layer} onChange={e=>setState(s=>({...s, layer:e.target.value}))}>
-                <option value="heatmap">Heatmap</option>
-                <option value="scatter">Scatterplot</option>
-              </select>
-            </label>
-
+          {/* Top controls – simplified layout */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:10 }}>
             <label>
               <span>Point Size</span>
               <input
+                className="slider w-full"
                 type="range"
                 min={0}
                 max={100}
@@ -104,18 +98,13 @@ export default function ControlPanel({ state, setState }) {
 
             <label>
               <span>Base Map</span>
-              <select value={baseMap} onChange={e=>setState(s=>({...s, baseMap:e.target.value}))}>
+              <select
+                className="w-full"
+                value={baseMap}
+                onChange={e=>setState(s=>({...s, baseMap:e.target.value}))}
+              >
                 <option value="dark">Dark</option>
                 <option value="light">Light</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Color Ramp</span>
-              <select value={colorRamp} onChange={e=>setState(s=>({...s, colorRamp:e.target.value}))}>
-                <option value="cool">Cool</option>
-                <option value="warm">Warm</option>
-                <option value="inferno">Inferno</option>
               </select>
             </label>
           </div>
