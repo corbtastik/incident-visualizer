@@ -48,6 +48,13 @@ function Dot({ rgba }) {
   );
 }
 
+// Helper: turn CAT_COLOR RGBA array into a good text color
+function rgbaForText(rgba = []) {
+  const [r = 200, g = 200, b = 200] = rgba;
+  // full opacity for text so it reads cleanly on dark
+  return `rgba(${r}, ${g}, ${b}, 1)`;
+}
+
 export default function ControlPanel({ state, setState }) {
   // layer & colorRamp remain in state but are no longer rendered (Scatter is the default)
   const { layer, radius, baseMap, colorRamp, types, categories } = state;
@@ -73,6 +80,9 @@ export default function ControlPanel({ state, setState }) {
       ...s,
       categories: GROUPS.reduce((acc, g) => (acc[g.key] = on, acc), {})
     }));
+
+  // Category label font size (slightly bigger than incident type rows)
+  const CAT_LABEL_SIZE_PX = 18;
 
   return (
     <div className="left-dock">
@@ -136,43 +146,55 @@ export default function ControlPanel({ state, setState }) {
           </div>
 
           {/* Group blocks with right-aligned color dots */}
-          {GROUPS.map((group, idx) => (
-            <div key={group.key} style={{ marginBottom:10 }}>
-              <div
-                className="group-title"
-                style={{
-                  display:'flex',
-                  alignItems:'center',
-                  justifyContent:'space-between',
-                  gap:8
-                }}
-              >
-                {/* Left: checkbox + label */}
-                <label style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <input
-                    type="checkbox"
-                    checked={!!categories[group.key]}
-                    onChange={() => toggleCategory(group.key)}
-                  />
-                  <span>{group.name}</span>
-                </label>
-
-                {/* Right: category color indicator */}
-                <Dot rgba={CAT_COLOR[group.key]} />
-              </div>
-
-              <div style={{ display:'grid', gap:6, marginTop:6 }}>
-                {group.items.map(t => (
-                  <label key={t} className="checkbox-row">
-                    <input type="checkbox" checked={types.has(t)} onChange={()=>toggleType(t)} />
-                    <span>{pretty(t)}</span>
+          {GROUPS.map((group, idx) => {
+            const catTextColor = rgbaForText(CAT_COLOR[group.key]);
+            return (
+              <div key={group.key} style={{ marginBottom:10 }}>
+                <div
+                  className="group-title"
+                  style={{
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'space-between',
+                    gap:8
+                  }}
+                >
+                  {/* Left: checkbox + label */}
+                  <label style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <input
+                      type="checkbox"
+                      checked={!!categories[group.key]}
+                      onChange={() => toggleCategory(group.key)}
+                    />
+                    <span
+                      style={{
+                        color: catTextColor,
+                        fontSize: CAT_LABEL_SIZE_PX,
+                        fontWeight: 800,
+                        letterSpacing: '.2px'
+                      }}
+                    >
+                      {group.name}
+                    </span>
                   </label>
-                ))}
-              </div>
 
-              {idx < GROUPS.length - 1 && <Divider />}
-            </div>
-          ))}
+                  {/* Right: category color indicator */}
+                  <Dot rgba={CAT_COLOR[group.key]} />
+                </div>
+
+                <div style={{ display:'grid', gap:6, marginTop:6 }}>
+                  {group.items.map(t => (
+                    <label key={t} className="checkbox-row">
+                      <input type="checkbox" checked={types.has(t)} onChange={()=>toggleType(t)} />
+                      <span>{pretty(t)}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {idx < GROUPS.length - 1 && <Divider />}
+              </div>
+            );
+          })}
 
         </div>
       </div>
