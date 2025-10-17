@@ -58,7 +58,8 @@ select {
   border-radius: 18px;
   padding: 14px 18px;
   box-shadow: 0 12px 28px rgba(0,0,0,0.35);
-  border: 1px solid rgba(0,0,0,0.08);
+  /* border: 1px solid rgba(0,0,0,0.08); */
+  border: 1px solid var(--tip-border, rgba(0,0,0,0.08));
   font-size: 14px;
 }
 

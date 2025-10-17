@@ -37,6 +37,11 @@ export default function TooltipIncident({ x, y, incident }) {
   const tipBg = rgbaToCss(rgba);
   const tipFg = contrastFor(rgba || [0, 237, 100]);
 
+  // Subtle border derived from category color
+  const tipBorder = rgba
+    ? `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, 0.35)`
+    : 'rgba(0,0,0,0.08)';
+
   // Fallback generic fields if not configured
   let title = cfg?.title || (type || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   let fields = cfg?.fields;
@@ -54,9 +59,10 @@ export default function TooltipIncident({ x, y, incident }) {
       style={{
         left: x + 16,
         top: y + 16,
-        // set CSS variables for bg/fg
+        // set CSS variables for bg/fg/border
         '--tip-bg': tipBg,
-        '--tip-fg': tipFg
+        '--tip-fg': tipFg,
+        '--tip-border': tipBorder
       }}
     >
       <div className="incident-tooltip__title">{title}</div>
