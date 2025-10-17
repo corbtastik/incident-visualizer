@@ -50,11 +50,12 @@ select {
 .incident-tooltip {
   position: absolute;
   z-index: 1000;
-  background: #00ED64;           /* bg per spec */
-  color: #001E2B;                /* text per spec */
+  /* driven by JS-set CSS variables; fall back to current green spec */
+  background: var(--tip-bg, #00ED64);
+  color: var(--tip-fg, #001E2B);
   font-family: "Lexend Deca", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  white-space: nowrap;           /* no wrapping */
-  border-radius: 18px;           /* matches mock’s rounded feel */
+  white-space: nowrap;
+  border-radius: 18px;
   padding: 14px 18px;
   box-shadow: 0 12px 28px rgba(0,0,0,0.35);
   border: 1px solid rgba(0,0,0,0.08);
@@ -62,7 +63,7 @@ select {
 }
 
 .incident-tooltip__title {
-  font-weight: 800;      
+  font-weight: 800;
   margin-bottom: 10px;
   letter-spacing: 0.2px;
   font-size: 16px;
