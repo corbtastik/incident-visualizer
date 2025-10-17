@@ -32,20 +32,44 @@ function KV({ label, value }) {
   );
 }
 
+/** Single-pass JSON → HTML syntax highlighter (Synthwave '84 palette).
+ *  Safe: escapes &, <, > before styling. No nested/empty spans.
+ */
+function highlightJSON(obj) {
+  const json = JSON.stringify(obj ?? {}, null, 2)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Groups:
+  // 1: key string (lookahead for colon)
+  // 3: plain string value
+  // 5: number
+  // 8: boolean or null
+  const tokenRE =
+    /("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(?=\s*:))|("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*")|(-?\b\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)|\b(true|false|null)\b/g;
+
+  return json.replace(tokenRE, (m, keyStr, _k2, strVal, _s2, numVal, kw) => {
+    if (keyStr) return `<span class="token key">${keyStr}</span>`;
+    if (strVal) return `<span class="token string">${strVal}</span>`;
+    if (numVal) return `<span class="token number">${numVal}</span>`;
+    if (kw === "true" || kw === "false")
+      return `<span class="token boolean">${kw}</span>`;
+    // null
+    return `<span class="token null">${kw}</span>`;
+  });
+}
+
 function LastEventCard({ title, doc }) {
   return (
     <div className="rounded-xl bg-black/30 border border-white/10 p-3 mt-2">
       <div className="text-xs uppercase tracking-wide opacity-70 mb-1">{title}</div>
       {doc ? (
-        <pre className="text-[11px] leading-4 font-mono whitespace-pre-wrap break-words">
-{`{
-  "_id": "${doc._id}",
-  "city": "${doc.city ?? ""}",
-  "lat": ${doc.lat ?? "null"},
-  "lng": ${doc.lng ?? "null"},
-  "type": "${doc.type ?? ""}"
-}`}
-        </pre>
+        <pre
+          className="text-[11px] leading-4 font-mono whitespace-pre-wrap break-words code synth84"
+          // single-pass highlighted HTML
+          dangerouslySetInnerHTML={{ __html: highlightJSON(doc) }}
+        />
       ) : (
         <div className="text-xs opacity-60">No events yet.</div>
       )}
