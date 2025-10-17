@@ -76,10 +76,9 @@ export const TOOLTIP_CONFIG = {
       'lat',
       'lng',
       'serviceIssue.accountId',
-      'serviceIssue.ontId',
       'serviceIssue.issue',
-      'serviceIssue.lightLevelDbm',
-      'serviceIssue.distanceMeters',
+      'serviceIssue.outageStart',
+      'serviceIssue.region',
       'ts'
     ]
   },
@@ -91,14 +90,10 @@ export const TOOLTIP_CONFIG = {
       'city',
       'lat',
       'lng',
-      'serviceIssue.cellId',
-      'serviceIssue.sector',
-      'serviceIssue.band',
-      'serviceIssue.pci',
-      'serviceIssue.rsrpDbm',
-      'serviceIssue.rsrqDb',
-      'serviceIssue.sinrDb',
+      'serviceIssue.imei',
       'serviceIssue.issue',
+      'serviceIssue.cellSector',
+      'serviceIssue.towerId',
       'ts'
     ]
   },
@@ -111,10 +106,8 @@ export const TOOLTIP_CONFIG = {
       'lat',
       'lng',
       'serviceIssue.ssid',
-      'serviceIssue.apMac',
-      'serviceIssue.connectedClients',
-      'serviceIssue.backhaulMbps',
       'serviceIssue.issue',
+      'serviceIssue.macAddress',
       'ts'
     ]
   },
@@ -127,11 +120,9 @@ export const TOOLTIP_CONFIG = {
       'lat',
       'lng',
       'serviceIssue.towerId',
-      'serviceIssue.sector',
-      'serviceIssue.rsrpDbm',
-      'serviceIssue.rsrqDb',
-      'serviceIssue.sinrDb',
+      'serviceIssue.phone',
       'serviceIssue.issue',
+      'serviceIssue.deviceModel',
       'ts'
     ]
   },
@@ -148,10 +139,8 @@ export const TOOLTIP_CONFIG = {
       'lat',
       'lng',
       'serviceIssue.agency',
-      'serviceIssue.unitId',
-      'serviceIssue.incidentCode',
-      'serviceIssue.priority',
       'serviceIssue.issue',
+      'serviceIssue.incidentCode',
       'ts'
     ]
   },
@@ -163,10 +152,9 @@ export const TOOLTIP_CONFIG = {
       'city',
       'lat',
       'lng',
-      'serviceIssue.agency',
       'serviceIssue.department',
-      'serviceIssue.ticketId',
       'serviceIssue.issue',
+      'serviceIssue.region',
       'ts'
     ]
   },
@@ -178,9 +166,7 @@ export const TOOLTIP_CONFIG = {
       'city',
       'lat',
       'lng',
-      'serviceIssue.deviceId',
-      'serviceIssue.simId',
-      'serviceIssue.priorityLevel',
+      'serviceIssue.agency',
       'serviceIssue.issue',
       'ts'
     ]
@@ -197,11 +183,11 @@ export const TOOLTIP_CONFIG = {
       'city',
       'lat',
       'lng',
-      'serviceIssue.permitId',
-      'serviceIssue.crewId',
-      'serviceIssue.status',
-      'serviceIssue.expectedCompletion',
+      'serviceIssue.projectCode',
+      'serviceIssue.crewCode',
       'serviceIssue.issue',
+      'serviceIssue.expectedCompletion',
+      'serviceIssue.contractor',
       'ts'
     ]
   },
@@ -214,9 +200,7 @@ export const TOOLTIP_CONFIG = {
       'lat',
       'lng',
       'serviceIssue.nodeId',
-      'serviceIssue.status',
-      'serviceIssue.backhaulType',
-      'serviceIssue.powerStatus',
+      'serviceIssue.lastHeartbeat',
       'serviceIssue.issue',
       'ts'
     ]
@@ -229,13 +213,9 @@ export const TOOLTIP_CONFIG = {
       'city',
       'lat',
       'lng',
-      'serviceIssue.linkId',
-      'serviceIssue.capacityMbps',
-      'serviceIssue.utilizationPct',
-      'serviceIssue.latencyMs',
-      'serviceIssue.jitterMs',
-      'serviceIssue.packetLossPct',
+      'serviceIssue.linkCode',
       'serviceIssue.issue',
+      'serviceIssue.utilizationPct',
       'ts'
     ]
   },
@@ -247,12 +227,9 @@ export const TOOLTIP_CONFIG = {
       'city',
       'lat',
       'lng',
-      'serviceIssue.dcId',
-      'serviceIssue.rack',
-      'serviceIssue.powerKw',
-      'serviceIssue.tempC',
-      'serviceIssue.status',
+      'serviceIssue.facilityCode',
       'serviceIssue.issue',
+      'serviceIssue.temperatureC',
       'ts'
     ]
   },
@@ -264,13 +241,9 @@ export const TOOLTIP_CONFIG = {
       'city',
       'lat',
       'lng',
-      'serviceIssue.provider',
-      'serviceIssue.region',
-      'serviceIssue.vpcId',
-      'serviceIssue.subnetId',
-      'serviceIssue.throughputGbps',
-      'serviceIssue.status',
+      'serviceIssue.customer',
       'serviceIssue.issue',
+      'serviceIssue.bgpPeer',
       'ts'
     ]
   },
@@ -282,13 +255,9 @@ export const TOOLTIP_CONFIG = {
       'city',
       'lat',
       'lng',
-      'serviceIssue.edgeSiteId',
-      'serviceIssue.cpuPct',
-      'serviceIssue.memPct',
-      'serviceIssue.diskPct',
-      'serviceIssue.tempC',
-      'serviceIssue.status',
+      'serviceIssue.nodeId',
       'serviceIssue.issue',
+      'serviceIssue.cpuUtilization',
       'ts'
     ]
   }
