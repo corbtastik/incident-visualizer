@@ -69,7 +69,7 @@ select {
   position: absolute;
   z-index: 1000;
   /* driven by JS-set CSS variables; fall back to current green spec */
-  background: var(--tip-bg, #00ED64);
+  background: var(--tip-bg, #e6e6e6);
   color: var(--tip-fg, #001E2B);
   font-family: "Lexend Deca", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   white-space: nowrap;

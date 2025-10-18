@@ -47,13 +47,12 @@ function LastEventCard({ title, doc }) {
 
 const rgb = (a) => `rgb(${a[0]}, ${a[1]}, ${a[2]})`;
 
-// Donut (same sizing as before)
-// Donut (responsive to card width; no overflow; perfectly centered)
+// Donut (responsive to card width; fixed-position tooltip above-left of cursor)
 function Donut({ parts }) {
   const [hover, setHover] = useState(null);
 
-  // Fixed geometry for the SVG viewBox (scales responsively)
-  const VB_W = 300, VB_H = 220;              // logical canvas
+  // Logical canvas (SVG scales responsively)
+  const VB_W = 300, VB_H = 220;
   const cx = VB_W / 2, cy = VB_H / 2 + 6;
   const r = 70, stroke = 38, C = 2 * Math.PI * r;
 
@@ -67,48 +66,35 @@ function Donut({ parts }) {
     return seg;
   });
 
-  // We clamp the tooltip within the *rendered* SVG size (not the viewBox).
-  // Grab those dimensions from the event's ownerSVGElement.
   return (
     <div className="relative mx-auto" style={{ width: "100%", maxWidth: VB_W }}>
       <svg
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         style={{ width: "100%", height: "auto", display: "block" }}
       >
-        <circle cx={cx} cy={cy} r={r} fill="none"
-                stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+        <circle
+          cx={cx} cy={cy} r={r}
+          fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke}
+        />
         {segs.map(s => (
           <circle
             key={s.key}
             cx={cx} cy={cy} r={r}
-            fill="none"
-            stroke={s.color}
-            strokeWidth={stroke}
-            strokeDasharray={s.dashArray}
-            strokeDashoffset={s.dashOffset}
-            strokeLinecap="butt"
-            transform={`rotate(-90 ${cx} ${cy})`}
+            fill="none" stroke={s.color} strokeWidth={stroke}
+            strokeDasharray={s.dashArray} strokeDashoffset={s.dashOffset}
+            strokeLinecap="butt" transform={`rotate(-90 ${cx} ${cy})`}
             style={{ cursor: "pointer" }}
             onMouseEnter={(e) => {
-              const svg = e.currentTarget.ownerSVGElement;
-              const { offsetX: x, offsetY: y } = e.nativeEvent;
+              const { clientX, clientY } = e.nativeEvent;
               setHover({
                 label: s.label,
                 pct: Math.round(s.pct * 1000) / 10,
-                x, y,
-                w: svg ? svg.clientWidth : VB_W,
-                h: svg ? svg.clientHeight : VB_H
+                clientX, clientY
               });
             }}
             onMouseMove={(e) => {
-              const svg = e.currentTarget.ownerSVGElement;
-              const { offsetX: x, offsetY: y } = e.nativeEvent;
-              setHover(h => h ? {
-                ...h,
-                x, y,
-                w: svg ? svg.clientWidth : h.w,
-                h: svg ? svg.clientHeight : h.h
-              } : h);
+              const { clientX, clientY } = e.nativeEvent;
+              setHover(h => h ? { ...h, clientX, clientY } : h);
             }}
             onMouseLeave={() => setHover(null)}
           />
@@ -120,9 +106,12 @@ function Donut({ parts }) {
         <div
           className="incident-tooltip"
           style={{
-            position: "absolute",
-            left: Math.min(Math.max(hover.x + 12, 8), hover.w - 8),
-            top:  Math.min(Math.max(hover.y + 12, 8), hover.h - 8),
+            position: "fixed",            // escape panel; no clipping
+            left: hover.clientX,
+            top: hover.clientY,
+            transform: "translate(-100%, -100%)", // upper-left of cursor
+            zIndex: 10000,                // above footer/header/etc.
+            pointerEvents: "none"         // don't steal hover
           }}
         >
           <div className="font-semibold">{hover.label}</div>
