@@ -32,20 +32,13 @@ function KV({ label, value }) {
   );
 }
 
-/** Single-pass JSON → HTML syntax highlighter (Synthwave '84 palette).
- *  Safe: escapes &, <, > before styling. No nested/empty spans.
- */
+/** Single-pass JSON → HTML syntax highlighter (Synthwave '84 palette). */
 function highlightJSON(obj) {
   const json = JSON.stringify(obj ?? {}, null, 2)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  // Groups:
-  // 1: key string (lookahead for colon)
-  // 3: plain string value
-  // 5: number
-  // 8: boolean or null
   const tokenRE =
     /("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(?=\s*:))|("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*")|(-?\b\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)|\b(true|false|null)\b/g;
 
@@ -55,7 +48,6 @@ function highlightJSON(obj) {
     if (numVal) return `<span class="token number">${numVal}</span>`;
     if (kw === "true" || kw === "false")
       return `<span class="token boolean">${kw}</span>`;
-    // null
     return `<span class="token null">${kw}</span>`;
   });
 }
@@ -67,7 +59,6 @@ function LastEventCard({ title, doc }) {
       {doc ? (
         <pre
           className="text-[11px] leading-4 font-mono whitespace-pre-wrap break-words code synth84"
-          // single-pass highlighted HTML
           dangerouslySetInnerHTML={{ __html: highlightJSON(doc) }}
         />
       ) : (
@@ -92,33 +83,39 @@ export default function LiveFeeds({ apiBase }) {
   }));
 
   return (
-    <div
-      className="fixed top-4 right-4 w-80 space-y-4"
-      style={{ zIndex: 10 }}
-    >
-      <div className="rounded-2xl bg-neutral-900/80 backdrop-blur border border-white/10 shadow-lg p-4">
-        <div className="text-sm font-semibold mb-2">Live Feeds</div>
+    <aside className="right-dock" style={{ zIndex: 10 }}>
+      <div className="right-dock__panel">
+        {/* Header */}
+        <div className="cp-header">
+          <div className="text-sm font-semibold">Live Feeds</div>
+        </div>
 
-        {feeds.map(({ key, label, hook }) => (
-          <div key={key} className="mb-3 last:mb-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Dot status={hook.status} />
-                <span className="text-sm">{label}</span>
+        {/* Body (scrollable) */}
+        <div className="cp-body">
+          {feeds.map(({ key, label, hook }) => (
+            <div key={key} className="mb-3 last:mb-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Dot status={hook.status} />
+                  <span className="text-sm">{label}</span>
+                </div>
+                <div className="text-xs text-neutral-400">
+                  Size: <span className="font-mono text-neutral-200">{hook.count}</span>
+                </div>
               </div>
-              <div className="text-xs text-neutral-400">
-                Size: <span className="font-mono text-neutral-200">{hook.count}</span>
-              </div>
+              <LastEventCard title="Last Event" doc={hook.lastEventPreview} />
+              {hook.status === "error" && (
+                <div className="mt-1 text-[11px] text-red-400">
+                  {hook.error}
+                </div>
+              )}
             </div>
-            <LastEventCard title="Last Event" doc={hook.lastEventPreview} />
-            {hook.status === "error" && (
-              <div className="mt-1 text-[11px] text-red-400">
-                {hook.error}
-              </div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {/* Footer (reserved for pie + total; empty for now) */}
+        <div className="rf-footer" />
       </div>
-    </div>
+    </aside>
   );
 }
