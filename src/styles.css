@@ -122,3 +122,37 @@ select {
   padding: 10px 12px;
 }
 
+/* Right panel: make it a 4-row grid just for the Live Feeds panel */
+.rf-grid {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto; /* header, feeds, pie (fills), footer */
+  overflow: hidden; /* absolutely no scroll on the panel */
+}
+
+/* Feeds take their natural height; no scrolling */
+.rf-feeds { overflow: visible; padding: 12px; }
+
+/* Pie zone expands and hard-centers the donut */
+.rf-pie-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;  /* nothing spills */
+  padding-bottom: 6px; /* slight breathing room above footer rule */
+}
+
+/* Right panel: header (auto), scrollable middle, footer (auto) */
+.rf-grid-scroll {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden; /* panel itself never scrolls */
+}
+
+/* Middle section scrolls as needed; keeps padding like the left panel body */
+.rf-scroll {
+  overflow: auto;
+  padding: 12px;
+  padding-right: 8px; /* small gutter so the scrollbar doesn’t overlay content */
+}
+
+/* Footer already exists as .rf-footer from earlier changes */
