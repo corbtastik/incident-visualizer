@@ -23,15 +23,6 @@ function Dot({ status }) {
   );
 }
 
-function KV({ label, value }) {
-  return (
-    <div className="flex justify-between text-xs text-neutral-300">
-      <span className="opacity-70">{label}</span>
-      <span className="font-mono ml-2">{value ?? "—"}</span>
-    </div>
-  );
-}
-
 /** Single-pass JSON → HTML syntax highlighter (Synthwave '84 palette). */
 function highlightJSON(obj) {
   const json = JSON.stringify(obj ?? {}, null, 2)
@@ -82,6 +73,9 @@ export default function LiveFeeds({ apiBase }) {
     hook: useCategoryFeed({ baseUrl: apiBase, category: c.key, intervalMs: 2000, pageSize: 200 })
   }));
 
+  // Live-updating total count across all categories
+  const totalCount = feeds.reduce((sum, f) => sum + (f.hook.count || 0), 0);
+
   return (
     <aside className="right-dock" style={{ zIndex: 10 }}>
       <div className="right-dock__panel">
@@ -113,8 +107,18 @@ export default function LiveFeeds({ apiBase }) {
           ))}
         </div>
 
-        {/* Footer (reserved for pie + total; empty for now) */}
-        <div className="rf-footer" />
+        {/* Footer: Total incidents */}
+        <div className="rf-footer">
+          <div className="group-title flex items-baseline gap-2">
+            <span>Total:</span>
+            <span
+              className="font-semibold"
+              style={{ color: "#ef4444" /* same red as error state */ }}
+            >
+              {totalCount.toLocaleString()}
+            </span>
+          </div>
+        </div>
       </div>
     </aside>
   );
