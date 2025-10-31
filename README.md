@@ -87,7 +87,7 @@ VITE_MAPTILER_KEY=<your_maptiler_api_key>   # optional, for MapLibre styles
     * 🟦 **Business**
     * 🟩 **Consumer**
     * 🟪 **Emerging Tech**
-    * 🩷 **Federal**
+    * 🟥 **Federal**
     * 🟨 **Infrastructure**
   * Hovering over a point reveals a detailed tooltip, e.g.:
 
