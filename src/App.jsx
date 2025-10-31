@@ -22,25 +22,16 @@ const slugify = (s) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-// Map UI slider (0..100) to pixel radius:
-//  - 50  -> 2px   (default / your preferred smallest)
-//  - 0   -> ~1px
-//  - 100 -> ~14px
 function uiToRadiusPx(u) {
   const v = Math.max(0, Math.min(100, Number(u) || 0));
-  if (v <= 50) {
-    // 0..50 -> 1..2
-    return 1 + (2 - 1) * (v / 50);
-  }
-  // 50..100 -> 2..14
+  if (v <= 50) return 1 + (2 - 1) * (v / 50);
   return 2 + (14 - 2) * ((v - 50) / 50);
 }
 
 export default function App() {
-  // Default: slider at middle (50) which maps to 2px points; all categories visible
   const [state, setState] = useState({
     layer: 'heatmap',
-    radius: 50, // UI slider value (0..100); 50 => 2px
+    radius: 50,
     baseMap: 'dark',
     colorRamp: 'cool',
     types: new Set(),
@@ -55,10 +46,9 @@ export default function App() {
     collapsed: false
   });
 
-  // Hover state for custom tooltip
   const [hoverInfo, setHoverInfo] = useState(null);
 
-  // Feeds
+  // Feeds (one hook per category)
   const businessFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'business',       intervalMs: 2000, pageSize: 200, cap: 8000 });
   const consumerFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'consumer',       intervalMs: 2000, pageSize: 200, cap: 8000 });
   const emergingTechFeed   = useCategoryFeed({ baseUrl: API_BASE, category: 'emerging_tech',  intervalMs: 2000, pageSize: 200, cap: 8000 });
@@ -67,52 +57,68 @@ export default function App() {
 
   const radiusPx = useMemo(() => uiToRadiusPx(state.radius), [state.radius]);
 
-  // Layers
+  // Animation tick for blink/grow (lightweight ~4 FPS). No effect unless demo is enabled.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 250);
+    return () => clearInterval(t);
+  }, []);
+
+  // Choose render data per category: if demo.enabled, use expiring open set; else use rolling buffer.
+  const dataForRender = useMemo(() => ({
+    business:       businessFeed?.demo?.enabled ? Array.from(businessFeed.demo.openMapRef.current.values()) : businessFeed.data,
+    consumer:       consumerFeed?.demo?.enabled ? Array.from(consumerFeed.demo.openMapRef.current.values()) : consumerFeed.data,
+    emerging_tech:  emergingTechFeed?.demo?.enabled ? Array.from(emergingTechFeed.demo.openMapRef.current.values()) : emergingTechFeed.data,
+    federal:        federalFeed?.demo?.enabled ? Array.from(federalFeed.demo.openMapRef.current.values()) : federalFeed.data,
+    infrastructure: infraFeed?.demo?.enabled ? Array.from(infraFeed.demo.openMapRef.current.values()) : infraFeed.data
+  }), [
+    businessFeed.data, consumerFeed.data, emergingTechFeed.data, federalFeed.data, infraFeed.data,
+    businessFeed?.demo?.enabled, consumerFeed?.demo?.enabled, emergingTechFeed?.demo?.enabled, federalFeed?.demo?.enabled, infraFeed?.demo?.enabled,
+    businessFeed?.demo?.openCount, consumerFeed?.demo?.openCount, emergingTechFeed?.demo?.openCount, federalFeed?.demo?.openCount, infraFeed?.demo?.openCount
+  ]);
+
+  // Per-category demo metadata for blink/grow accessors
+  const demoMetaByCat = useMemo(() => ({
+    business:       businessFeed?.demo?.enabled ? { enabled: true,  createdAtRef: businessFeed.demo.createdAtRef,       expiryAtRef: businessFeed.demo.expiryAtRef } : { enabled: false },
+    consumer:       consumerFeed?.demo?.enabled ? { enabled: true,  createdAtRef: consumerFeed.demo.createdAtRef,       expiryAtRef: consumerFeed.demo.expiryAtRef } : { enabled: false },
+    emerging_tech:  emergingTechFeed?.demo?.enabled ? { enabled: true,  createdAtRef: emergingTechFeed.demo.createdAtRef, expiryAtRef: emergingTechFeed.demo.expiryAtRef } : { enabled: false },
+    federal:        federalFeed?.demo?.enabled ? { enabled: true,  createdAtRef: federalFeed.demo.createdAtRef,        expiryAtRef: federalFeed.demo.expiryAtRef } : { enabled: false },
+    infrastructure: infraFeed?.demo?.enabled ? { enabled: true,  createdAtRef: infraFeed.demo.createdAtRef,           expiryAtRef: infraFeed.demo.expiryAtRef } : { enabled: false }
+  }), [
+    businessFeed?.demo?.enabled, consumerFeed?.demo?.enabled, emergingTechFeed?.demo?.enabled, federalFeed?.demo?.enabled, infraFeed?.demo?.enabled,
+    businessFeed?.demo?.createdAtRef, consumerFeed?.demo?.createdAtRef, emergingTechFeed?.demo?.createdAtRef, federalFeed?.demo?.createdAtRef, infraFeed?.demo?.createdAtRef,
+    businessFeed?.demo?.expiryAtRef, consumerFeed?.demo?.expiryAtRef, emergingTechFeed?.demo?.expiryAtRef, federalFeed?.demo?.expiryAtRef, infraFeed?.demo?.expiryAtRef
+  ]);
+
+  // Build layers with per-category render data and meta
   const layers = useMemo(() => {
     return makeCategoryScatterLayers(
       {
-        business:       businessFeed.data,
-        consumer:       consumerFeed.data,
-        emerging_tech:  emergingTechFeed.data,
-        federal:        federalFeed.data,
-        infrastructure: infraFeed.data
+        business:       dataForRender.business,
+        consumer:       dataForRender.consumer,
+        emerging_tech:  dataForRender.emerging_tech,
+        federal:        dataForRender.federal,
+        infrastructure: dataForRender.infrastructure
       },
-      { radiusPx, types: state.types, categories: state.categories }
+      { radiusPx, types: state.types, categories: state.categories, nowTick, demoMetaByCat }
     );
-  }, [
-    businessFeed.data,
-    consumerFeed.data,
-    emergingTechFeed.data,
-    federalFeed.data,
-    infraFeed.data,
-    radiusPx,
-    state.types,
-    state.categories
-  ]);
+  }, [dataForRender, radiusPx, state.types, state.categories, nowTick]);
 
-  // Visible count
+  // Visible count: reflect whichever source each category uses
   const visibleCount = useMemo(() => {
     if (state.types.size === 0) return 0;
     const wanted = new Set([...state.types].map(slugify));
     const pools = [];
-    if (state.categories.business)       pools.push(...businessFeed.data);
-    if (state.categories.consumer)       pools.push(...consumerFeed.data);
-    if (state.categories.emerging_tech)  pools.push(...emergingTechFeed.data);
-    if (state.categories.federal)        pools.push(...federalFeed.data);
-    if (state.categories.infrastructure) pools.push(...infraFeed.data);
+    if (state.categories.business)       pools.push(...dataForRender.business);
+    if (state.categories.consumer)       pools.push(...dataForRender.consumer);
+    if (state.categories.emerging_tech)  pools.push(...dataForRender.emerging_tech);
+    if (state.categories.federal)        pools.push(...dataForRender.federal);
+    if (state.categories.infrastructure) pools.push(...dataForRender.infrastructure);
     return pools.reduce((acc, d) => {
       const t = slugify(d?.serviceIssue?.type);
       return acc + (t && wanted.has(t) ? 1 : 0);
     }, 0);
-  }, [
-    businessFeed.data,
-    consumerFeed.data,
-    emergingTechFeed.data,
-    federalFeed.data,
-    infraFeed.data,
-    state.types,
-    state.categories
-  ]);
+  }, [dataForRender, state.types, state.categories]);
 
   const styleUrl = state.baseMap === 'dark' ? DARK : LIGHT;
 
@@ -134,11 +140,7 @@ export default function App() {
           initialViewState={{ longitude: -98, latitude: 39, zoom: 3 }}
           controller={true}
           layers={layers}
-
-          /* Using our custom overlay, not DeckGL's string tooltip */
           getTooltip={null}
-
-          /* Capture hover for any incident; TooltipIncident will decide layout based on config */
           onHover={info => {
             const obj = info && info.object;
             if (obj && obj.serviceIssue) {
@@ -150,7 +152,6 @@ export default function App() {
         >
           <Map reuseMaps mapLib={maplibregl} mapStyle={styleUrl} />
 
-          {/* Unified incident tooltip (config-driven) */}
           {hoverInfo?.object && (
             <TooltipIncident
               x={hoverInfo.x}

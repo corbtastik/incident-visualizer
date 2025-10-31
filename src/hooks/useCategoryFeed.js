@@ -1,11 +1,37 @@
 // src/hooks/useCategoryFeed.js
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+/**
+ * Client-only "fake resolutions" scaffolding
+ * ------------------------------------------
+ * When enabled, each incoming incident gets an expiry window and a prune loop
+ * removes expired points. Now supports ALL categories (per-hook instance).
+ */
+
+// ---- Demo config (FLAG stays false by default; flip to true to activate) ----
+const FAKE_RESOLUTIONS_ENABLED = true; // <--- TURN ON WHEN READY
+const FAKE_RES_CATS = new Set([
+  "business",
+  "consumer",
+  "emerging_tech",
+  "federal",
+  "infrastructure"
+]);
+const FAKE_RES_MIN_MS = 10_000;   // 10 seconds
+const FAKE_RES_MAX_MS = 60_000;  // 1 minutes
+const PRUNE_INTERVAL_MS = 2_000;  // prune cadence
+const MAX_VISIBLE_TOTAL = 80_000; // safety cap
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+// ----------------------------------------------------------------------------
 
 /**
  * Polls /debug/:category once to grab newestId as the starting cursor,
  * then tails /live/:category?after=<cursor> for new docs.
  *
- * Now also accumulates a rolling `data` buffer (capped) so
+ * Also accumulates a rolling `data` buffer (capped) so
  * map layers can render the same stream the Live Feeds panel uses.
  */
 export function useCategoryFeed({
@@ -19,11 +45,24 @@ export function useCategoryFeed({
   const [error, setError] = useState(null);
   const [count, setCount] = useState(0);
   const [lastEvent, setLastEvent] = useState(null);
-  const [data, setData] = useState([]); // NEW: rolling buffer for map layers
+  const [data, setData] = useState([]); // rolling buffer for map layers
 
   const cursorRef = useRef(null);
   const timerRef = useRef(null);
   const abortRef = useRef(null);
+
+  // Demo state per hook/category
+  const demoEnabled = FAKE_RESOLUTIONS_ENABLED && FAKE_RES_CATS.has(category);
+  const openMapRef   = useRef(new Map()); // Map<id, doc>
+  const createdAtRef = useRef(new Map()); // Map<id, createdAtMs>
+  const expiryAtRef  = useRef(new Map()); // Map<id, expiryAtMs>
+
+  // Reset demo state when category/baseUrl changes
+  useEffect(() => {
+    openMapRef.current = new Map();
+    createdAtRef.current = new Map();
+    expiryAtRef.current = new Map();
+  }, [category, baseUrl]);
 
   // pick the 5 fields desired for the “Last Event” card
   function toPreview(doc) {
@@ -92,7 +131,29 @@ export function useCategoryFeed({
             setCount((c) => c + docs.length);
             setLastEvent(docs[docs.length - 1] || null);
 
-            // NEW: append to rolling data buffer for layers
+            // Seed demo lifecycle maps
+            if (demoEnabled) {
+              const now = Date.now();
+              for (const d of docs) {
+                if (d?.type !== "incident") continue; // only expire incidents
+                const id = typeof d._id === "string" ? d._id : d._id?.$oid || String(d._id);
+                if (!id) continue;
+
+                // Insert/overwrite in open map
+                openMapRef.current.set(id, d);
+
+                // Assign created/expiry if first time seeing this id
+                if (!createdAtRef.current.has(id)) {
+                  createdAtRef.current.set(id, now);
+                }
+                if (!expiryAtRef.current.has(id)) {
+                  const ttl = randInt(FAKE_RES_MIN_MS, FAKE_RES_MAX_MS);
+                  expiryAtRef.current.set(id, now + ttl);
+                }
+              }
+            }
+
+            // Append to rolling data buffer for layers (unchanged consumers)
             setData((prev) => {
               const merged = [...prev, ...docs];
               return merged.length > cap ? merged.slice(merged.length - cap) : merged;
@@ -119,13 +180,56 @@ export function useCategoryFeed({
       if (timerRef.current) clearTimeout(timerRef.current);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [baseUrl, category, intervalMs, pageSize, cap]);
+  }, [baseUrl, category, intervalMs, pageSize, cap, demoEnabled]);
+
+  // Prune loop (no-op if flag off)
+  useEffect(() => {
+    if (!demoEnabled) return;
+
+    const t = setInterval(() => {
+      const now = Date.now();
+      // expire by time
+      for (const [id, exp] of expiryAtRef.current.entries()) {
+        if (now >= exp) {
+          openMapRef.current.delete(id);
+          createdAtRef.current.delete(id);
+          expiryAtRef.current.delete(id);
+        }
+      }
+      // cap guard (delete soonest-to-expire first)
+      if (openMapRef.current.size > MAX_VISIBLE_TOTAL) {
+        const arr = Array.from(expiryAtRef.current.entries());
+        arr.sort((a, b) => a[1] - b[1]);
+        const excess = openMapRef.current.size - MAX_VISIBLE_TOTAL;
+        for (let i = 0; i < excess && i < arr.length; i++) {
+          const id = arr[i][0];
+          openMapRef.current.delete(id);
+          createdAtRef.current.delete(id);
+          expiryAtRef.current.delete(id);
+        }
+      }
+    }, PRUNE_INTERVAL_MS);
+
+    return () => clearInterval(t);
+  }, [demoEnabled]);
+
+  // Diagnostics for optional UI
+  const openCount = useMemo(() => openMapRef.current.size, [data, category, demoEnabled]);
 
   return {
     status,            // "ok" | "idle" | "error"
     error,
     count,
     lastEventPreview: toPreview(lastEvent),
-    data              // <-- NEW: docs for plotting
+    data,              // legacy consumers
+
+    // Demo state for renderer/animation
+    demo: {
+      enabled: demoEnabled,
+      openMapRef,
+      createdAtRef,
+      expiryAtRef,
+      openCount
+    }
   };
 }
