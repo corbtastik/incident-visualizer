@@ -110,13 +110,13 @@ VITE_MAPTILER_KEY=<your_maptiler_api_key>   # optional, for MapLibre styles
 
 ### 2. **Integration with the Simulator**
 
-* The **Simulator** generates incident events and writes them to MongoDB (one collection per category).
-* The **Visualizer** polls those category collections through `/live/:category?after=<ObjectId>` endpoints.
+* The **Simulator** generates incident events and writes them to MongoDB.
+* Atlas Stream Processing pipelines categorize each raw event into it's own collection.
+* Another Atlas Stream Processing pipeline fixes events.
+* The **Visualizer** receives live updates of the incidents through `/live/:category?after=<ObjectId>` endpoints.
 * New events stream into the map in near real-time:
-
   * **Incidents** appear as new points.
   * **Resolutions** (if enabled) fade and disappear as repairs occur.
-* MongoDB Atlas Stream Processing (ASP) can optionally enrich or route events before they reach the visualizer.
 
 ---
 
