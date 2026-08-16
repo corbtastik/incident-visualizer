@@ -1,0 +1,32 @@
+{
+  "6a7be1f056d4eaa839dc8841": [
+    { "incidentId": "INC-2026-8712", "type": "construction", "city": "Lewisville, GA", "similarity": 0.91 },
+    { "incidentId": "INC-2026-8455", "type": "fiber", "city": "Loco Hills, NM", "similarity": 0.88 },
+    { "incidentId": "INC-2026-8203", "type": "fiber", "city": "Terry, MS", "similarity": 0.86 },
+    { "incidentId": "INC-2026-7991", "type": "backhaul", "city": "Swifton, AR", "similarity": 0.84 },
+    { "incidentId": "INC-2026-7744", "type": "fiber", "city": "Perham, MN", "similarity": 0.83 },
+    { "incidentId": "INC-2026-9104", "type": "fiber", "city": "Warrior, AL", "similarity": 0.81 },
+    { "incidentId": "INC-2026-9101", "type": "construction", "city": "Warrior, AL", "similarity": 0.79 },
+    { "incidentId": "INC-2026-9107", "type": "backhaul", "city": "Warrior, AL", "similarity": 0.76 }
+  ],
+  "6a7be1f056d4eaa839dc8001": [
+    { "incidentId": "INC-2026-9104", "type": "fiber", "city": "Warrior, AL", "similarity": 0.88 },
+    { "incidentId": "INC-2026-9107", "type": "backhaul", "city": "Warrior, AL", "similarity": 0.86 },
+    { "incidentId": "INC-2026-9112", "type": "smartcell", "city": "Warrior, AL", "similarity": 0.84 },
+    { "incidentId": "INC-2026-9118", "type": "broadband", "city": "Warrior, AL", "similarity": 0.83 },
+    { "incidentId": "INC-2026-9123", "type": "voip", "city": "Warrior, AL", "similarity": 0.79 },
+    { "incidentId": "INC-2026-8841", "type": "fiber", "city": "McArthur, OH", "similarity": 0.74 },
+    { "incidentId": "INC-2026-8712", "type": "construction", "city": "Lewisville, GA", "similarity": 0.71 },
+    { "incidentId": "INC-2026-8455", "type": "fiber", "city": "Loco Hills, NM", "similarity": 0.68 }
+  ],
+  "6a7be1f056d4eaa839dc8002": [
+    { "incidentId": "INC-2026-8841", "type": "fiber", "city": "McArthur, OH", "similarity": 0.89 },
+    { "incidentId": "INC-2026-9101", "type": "construction", "city": "Warrior, AL", "similarity": 0.88 },
+    { "incidentId": "INC-2026-9107", "type": "backhaul", "city": "Warrior, AL", "similarity": 0.85 },
+    { "incidentId": "INC-2026-8455", "type": "fiber", "city": "Loco Hills, NM", "similarity": 0.84 },
+    { "incidentId": "INC-2026-8203", "type": "fiber", "city": "Terry, MS", "similarity": 0.82 },
+    { "incidentId": "INC-2026-7744", "type": "fiber", "city": "Perham, MN", "similarity": 0.79 },
+    { "incidentId": "INC-2026-9112", "type": "smartcell", "city": "Warrior, AL", "similarity": 0.76 },
+    { "incidentId": "INC-2026-9118", "type": "broadband", "city": "Warrior, AL", "similarity": 0.73 }
+  ]
+}

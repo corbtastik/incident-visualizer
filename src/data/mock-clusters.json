@@ -1,0 +1,41 @@
+[
+  {
+    "clusterId": "CLUSTER-2026-0812-004",
+    "seedId": "INC-2026-9101",
+    "city": "Warrior",
+    "state": "AL",
+    "members": [
+      { "incidentId": "INC-2026-9101", "type": "construction", "similarity": 1.0, "isSeed": true },
+      { "incidentId": "INC-2026-9104", "type": "fiber", "similarity": 0.88 },
+      { "incidentId": "INC-2026-9107", "type": "backhaul", "similarity": 0.86 },
+      { "incidentId": "INC-2026-9112", "type": "smartcell", "similarity": 0.84 },
+      { "incidentId": "INC-2026-9118", "type": "broadband", "similarity": 0.83 },
+      { "incidentId": "INC-2026-9123", "type": "voip", "similarity": 0.79 }
+    ],
+    "controlCase": {
+      "incidentId": "INC-2026-9130",
+      "type": "datacenter",
+      "similarity": 0.31,
+      "distanceKm": 4.1
+    },
+    "detection": {
+      "window": "6h",
+      "radius": "50 km",
+      "threshold": 5,
+      "similarity": 0.82,
+      "scoredAt": "2026-08-12T03:01:15Z",
+      "actualSpanKm": 8.2
+    },
+    "impact": {
+      "ticketsCollapsed": 6,
+      "truckRollsAvoided": 5,
+      "estSavedUsd": 19200
+    },
+    "inferredRootCause": {
+      "description": "Third-party directional bore strike",
+      "confidence": 0.86,
+      "seedIncident": "INC-2026-9101",
+      "quote": "Directional bore contacted unmarked conduit at 4ft"
+    }
+  }
+]

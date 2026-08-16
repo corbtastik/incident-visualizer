@@ -1,0 +1,678 @@
+[
+  {
+    "_id": "6a7be1f056d4eaa839dc8001",
+    "type": "incident",
+    "ts": "2026-08-12T03:01:04.778Z",
+    "city": "Warrior",
+    "lat": 33.8143,
+    "lng": -86.8094,
+    "serviceIssue": {
+      "type": "construction",
+      "category": "infrastructure",
+      "ticketRef": "INC-2026-9101",
+      "narrative": "Directional bore contacted unmarked conduit at 4ft depth. Contractor crew stopped work immediately upon detecting resistance. SE-WAR ring segment at risk. Adjacent splice enclosure SE-WAR-1180 may be compromised.",
+      "severity": "p1",
+      "symptoms": ["permit-delay", "bore-strike", "unmarked-conduit"],
+      "impact": { "unit": "passings", "count": 1400, "scope": "segment" },
+      "resolution": {
+        "state": "open",
+        "rootCause": "third-party-dig",
+        "hours": null,
+        "crew": "splice",
+        "techs": 2,
+        "truckRolls": 1,
+        "parts": ["48ct-ribbon", "splice-enclosure-SE-12"],
+        "costUsd": 3840
+      }
+    },
+    "correlation": {
+      "clusterId": "CLUSTER-2026-0812-004",
+      "isSystemic": true,
+      "novelty": null
+    },
+    "media": [
+      { "mediaId": "MED-9101-1", "kind": "image", "url": "/mock/bore-site.jpg", "caption": "Bore site with exposed conduit" }
+    ]
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8002",
+    "type": "incident",
+    "ts": "2026-08-12T03:03:04.778Z",
+    "city": "Warrior",
+    "lat": 33.8156,
+    "lng": -86.8112,
+    "serviceIssue": {
+      "type": "fiber",
+      "category": "consumer",
+      "ticketRef": "INC-2026-9104",
+      "narrative": "Optical power collapsed on PON 1/3/4 off OLT-WAR-07. Reading -31.4dBm against -19.0 nominal. OTDR places the event at 1840m, just past the SE-WAR-2211 enclosure. 340 subscribers dark. Third-party excavation suspected based on timing.",
+      "severity": "p1",
+      "symptoms": ["light-level-low", "fiber-cut", "third-party-dig"],
+      "impact": { "unit": "subscribers", "count": 340, "scope": "segment" },
+      "resolution": {
+        "state": "open",
+        "rootCause": "third-party-dig",
+        "hours": 4.2,
+        "crew": "splice",
+        "techs": 2,
+        "truckRolls": 1,
+        "parts": ["48ct-ribbon", "splice-enclosure-SE-12"],
+        "costUsd": 3840
+      }
+    },
+    "correlation": {
+      "clusterId": "CLUSTER-2026-0812-004",
+      "isSystemic": true,
+      "novelty": null
+    },
+    "media": [
+      { "mediaId": "MED-9104-1", "kind": "image", "url": "/mock/pedestal-open.jpg", "caption": "Pedestal door open, severed 48ct visible" },
+      { "mediaId": "MED-9104-2", "kind": "document-page", "url": "/mock/splice-map-p14.png", "caption": "Splice map, Warrior ring segment 12" }
+    ]
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8003",
+    "type": "incident",
+    "ts": "2026-08-12T03:05:04.778Z",
+    "city": "Warrior",
+    "lat": 33.8189,
+    "lng": -86.8067,
+    "serviceIssue": {
+      "type": "backhaul",
+      "category": "infrastructure",
+      "ticketRef": "INC-2026-9107",
+      "narrative": "BH-WAR-118 errored seconds spiking dramatically. Path is unprotected following last week's maintenance window. 6 downstream sites at risk of isolation. LOS increase correlating with fiber alarm upstream.",
+      "severity": "p1",
+      "symptoms": ["los-increase", "errored-seconds", "path-unprotected"],
+      "impact": { "unit": "sites", "count": 6, "scope": "region" },
+      "resolution": {
+        "state": "open",
+        "rootCause": "fiber-cut",
+        "hours": null,
+        "crew": "transport",
+        "techs": 1,
+        "truckRolls": 1,
+        "parts": [],
+        "costUsd": 2400
+      }
+    },
+    "correlation": {
+      "clusterId": "CLUSTER-2026-0812-004",
+      "isSystemic": true,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8004",
+    "type": "incident",
+    "ts": "2026-08-12T03:07:04.778Z",
+    "city": "Warrior",
+    "lat": 33.8134,
+    "lng": -86.8145,
+    "serviceIssue": {
+      "type": "smartcell",
+      "category": "infrastructure",
+      "ticketRef": "INC-2026-9112",
+      "narrative": "Node stopped reporting, no heartbeat since 0152Z. Backhaul BH-POR-311 also showing errors. 480 subscribers losing offload capacity. Pole mount at intersection of Main and Oak.",
+      "severity": "p2",
+      "symptoms": ["backhaul-down", "no-heartbeat", "node-offline"],
+      "impact": { "unit": "subscribers", "count": 480, "scope": "segment" },
+      "resolution": {
+        "state": "open",
+        "rootCause": null,
+        "hours": null,
+        "crew": "rf",
+        "techs": 1,
+        "truckRolls": 1,
+        "parts": [],
+        "costUsd": 1800
+      }
+    },
+    "correlation": {
+      "clusterId": "CLUSTER-2026-0812-004",
+      "isSystemic": true,
+      "novelty": null
+    },
+    "media": [
+      { "mediaId": "MED-9112-1", "kind": "video", "url": "/mock/drone-pass.mp4", "caption": "Drone inspection of pole mount" }
+    ]
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8005",
+    "type": "incident",
+    "ts": "2026-08-12T03:10:04.778Z",
+    "city": "Warrior",
+    "lat": 33.8167,
+    "lng": -86.8089,
+    "serviceIssue": {
+      "type": "broadband",
+      "category": "consumer",
+      "ticketRef": "INC-2026-9118",
+      "narrative": "Subscriber says internet just quit, no lights on the ONT. Multiple neighbors also affected. Getting 0 of 100Mbps expected. Node segment SEG-WAR-14 appears dark.",
+      "severity": "p2",
+      "symptoms": ["packet-loss", "ont-dark", "no-service"],
+      "impact": { "unit": "subscribers", "count": 312, "scope": "segment" },
+      "resolution": {
+        "state": "open",
+        "rootCause": null,
+        "hours": null,
+        "crew": "install",
+        "techs": 1,
+        "truckRolls": 1,
+        "parts": [],
+        "costUsd": 1200
+      }
+    },
+    "correlation": {
+      "clusterId": "CLUSTER-2026-0812-004",
+      "isSystemic": true,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8006",
+    "type": "incident",
+    "ts": "2026-08-12T03:12:04.778Z",
+    "city": "Warrior",
+    "lat": 33.8178,
+    "lng": -86.8123,
+    "serviceIssue": {
+      "type": "voip",
+      "category": "business",
+      "ticketRef": "INC-2026-9123",
+      "narrative": "Dead air on all inbound calls to the Warrior office. Outbound works sporadically. MOS score dropped to 1.8. SBC shows registration issues upstream. 62 extensions affected.",
+      "severity": "p1",
+      "symptoms": ["one-way-audio", "dead-air", "registration-failure"],
+      "impact": { "unit": "extensions", "count": 62, "scope": "single" },
+      "resolution": {
+        "state": "open",
+        "rootCause": null,
+        "hours": null,
+        "crew": "voice",
+        "techs": 1,
+        "truckRolls": 1,
+        "parts": [],
+        "costUsd": 2200
+      }
+    },
+    "correlation": {
+      "clusterId": "CLUSTER-2026-0812-004",
+      "isSystemic": true,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8007",
+    "type": "incident",
+    "ts": "2026-08-12T03:01:15.778Z",
+    "city": "Warrior",
+    "lat": 33.8523,
+    "lng": -86.7834,
+    "serviceIssue": {
+      "type": "datacenter",
+      "category": "infrastructure",
+      "ticketRef": "INC-2026-9130",
+      "narrative": "Cooling alert in HALL-B at ATTWAR07. Temperature 30.5C against 22.0 setpoint. CRAH-B-04 degraded, N+1 redundancy lost. 38 racks at risk across rows R12-R14. Unrelated to area outages.",
+      "severity": "p2",
+      "symptoms": ["cooling-alert", "crah-failure", "thermal-excursion"],
+      "impact": { "unit": "racks", "count": 38, "scope": "single" },
+      "resolution": {
+        "state": "dispatched",
+        "rootCause": "hvac-failure",
+        "hours": null,
+        "crew": "facilities",
+        "techs": 2,
+        "truckRolls": 1,
+        "parts": ["crah-filter", "fan-motor"],
+        "costUsd": 4500
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": [
+      { "mediaId": "MED-9130-1", "kind": "image", "url": "/mock/thermal-camera.jpg", "caption": "Thermal camera image of hot aisle" }
+    ]
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8841",
+    "type": "incident",
+    "ts": "2026-08-12T02:45:04.778Z",
+    "city": "McArthur",
+    "lat": 39.135,
+    "lng": -82.491,
+    "serviceIssue": {
+      "type": "fiber",
+      "category": "consumer",
+      "ticketRef": "INC-2026-8841",
+      "narrative": "Optical power collapsed on PON 1/3/4 off OLT-MCA-07. Reading -31.4dBm against -19.0 nominal. OTDR places the event at 1840m, just past the SE-MCA-2211 enclosure. 340 subscribers dark. Contractor bore work active in the area since Monday.",
+      "severity": "p1",
+      "symptoms": ["light-level-low", "fiber-cut", "third-party-dig"],
+      "impact": { "unit": "subscribers", "count": 340, "scope": "segment" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "third-party-dig",
+        "hours": 4.2,
+        "crew": "splice",
+        "techs": 2,
+        "truckRolls": 1,
+        "parts": ["48ct-ribbon", "splice-enclosure-SE-12"],
+        "costUsd": 3840,
+        "resolvedAt": "2026-08-12T07:13:00Z",
+        "resolutionNotes": "Contractor bore struck conduit at 4ft depth. Spliced through, permit violation filed."
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": [
+      { "mediaId": "MED-8841-1", "kind": "image", "url": "/mock/pedestal-open.jpg", "caption": "Pedestal door open, severed 48ct visible at conduit entry" },
+      { "mediaId": "MED-8841-2", "kind": "document-page", "url": "/mock/splice-map-mca.png", "caption": "Splice map, McArthur ring segment 12, page 14" }
+    ]
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8712",
+    "type": "incident",
+    "ts": "2026-08-12T01:30:04.778Z",
+    "city": "Lewisville",
+    "lat": 39.4523,
+    "lng": -82.8234,
+    "serviceIssue": {
+      "type": "construction",
+      "category": "infrastructure",
+      "ticketRef": "INC-2026-8712",
+      "narrative": "FBR-LEW-204 permit delay from county ROW office. Directional bore crew standing down since Friday. 620m of conduit blocked. Cutover to new fiber ring at risk.",
+      "severity": "p3",
+      "symptoms": ["permit-delay", "crew-idle", "schedule-slip"],
+      "impact": { "unit": "passings", "count": 890, "scope": "segment" },
+      "resolution": {
+        "state": "open",
+        "rootCause": "permit-delay",
+        "hours": null,
+        "crew": null,
+        "techs": null,
+        "truckRolls": 0,
+        "parts": [],
+        "costUsd": null
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8455",
+    "type": "incident",
+    "ts": "2026-08-12T00:45:04.778Z",
+    "city": "Loco Hills",
+    "lat": 32.6789,
+    "lng": -103.9456,
+    "serviceIssue": {
+      "type": "fiber",
+      "category": "consumer",
+      "ticketRef": "INC-2026-8455",
+      "narrative": "Trencher damage reported near new subdivision. Excavator struck unmarked lateral feed. Optical levels dropped 15dB downstream. Third-party contractor did not call before digging.",
+      "severity": "p1",
+      "symptoms": ["light-level-low", "trencher-damage", "unmarked-lateral"],
+      "impact": { "unit": "subscribers", "count": 156, "scope": "segment" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "third-party-dig",
+        "hours": 3.8,
+        "crew": "splice",
+        "techs": 2,
+        "truckRolls": 1,
+        "parts": ["12ct-ribbon", "splice-tray"],
+        "costUsd": 2840
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8203",
+    "type": "incident",
+    "ts": "2026-08-11T23:15:04.778Z",
+    "city": "Terry",
+    "lat": 32.0956,
+    "lng": -90.2834,
+    "serviceIssue": {
+      "type": "fiber",
+      "category": "consumer",
+      "ticketRef": "INC-2026-8203",
+      "narrative": "Backhoe hit our line during road widening project. State DOT contractor. 890 customers without service. OTDR shows clean break at 2.3km from OLT.",
+      "severity": "p1",
+      "symptoms": ["fiber-cut", "backhoe-strike", "clean-break"],
+      "impact": { "unit": "subscribers", "count": 890, "scope": "segment" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "third-party-dig",
+        "hours": 5.1,
+        "crew": "splice",
+        "techs": 2,
+        "truckRolls": 1,
+        "parts": ["96ct-ribbon", "splice-enclosure-SE-24"],
+        "costUsd": 4200
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8991",
+    "type": "incident",
+    "ts": "2026-08-11T18:30:04.778Z",
+    "city": "Swifton",
+    "lat": 35.8234,
+    "lng": -91.1234,
+    "serviceIssue": {
+      "type": "backhaul",
+      "category": "infrastructure",
+      "ticketRef": "INC-2026-7991",
+      "narrative": "Microwave path fade on BH-SWI-783. Utilization at 98.6%, errored seconds spiking. RSL dropped to -74dBm. Weather-related attenuation suspected. 6 sites downstream.",
+      "severity": "p2",
+      "symptoms": ["los-increase", "path-fade", "weather-attenuation"],
+      "impact": { "unit": "sites", "count": 6, "scope": "region" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "weather",
+        "hours": 2.5,
+        "crew": "transport",
+        "techs": 1,
+        "truckRolls": 0,
+        "parts": [],
+        "costUsd": 0
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8744",
+    "type": "incident",
+    "ts": "2026-08-11T14:15:04.778Z",
+    "city": "Perham",
+    "lat": 46.5934,
+    "lng": -95.5723,
+    "serviceIssue": {
+      "type": "fiber",
+      "category": "consumer",
+      "ticketRef": "INC-2026-7744",
+      "narrative": "Third-party excavation at 123 Main St severed distribution cable. Customer reported no service. Field tech confirmed physical damage to pedestal P-4421.",
+      "severity": "p2",
+      "symptoms": ["light-level-low", "excavation-damage", "pedestal-damage"],
+      "impact": { "unit": "subscribers", "count": 48, "scope": "single" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "third-party-dig",
+        "hours": 3.2,
+        "crew": "splice",
+        "techs": 1,
+        "truckRolls": 1,
+        "parts": ["6ct-ribbon"],
+        "costUsd": 1840
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8890",
+    "type": "incident",
+    "ts": "2026-08-12T02:50:04.778Z",
+    "city": "Myrtle Beach",
+    "lat": 33.6891,
+    "lng": -78.8867,
+    "serviceIssue": {
+      "type": "satellite",
+      "category": "emerging_tech",
+      "ticketRef": "INC-2026-8903",
+      "narrative": "Signal degradation on SAT-5526, BEAM-SE-14. SNR 7.3dB against 14.0 nominal. Elevation 31.2 degrees. Rain fade suspected, 18.4mm in last hour. 62 terminals on this beam.",
+      "severity": "p2",
+      "symptoms": ["signal-degradation", "rain-fade", "snr-collapse"],
+      "impact": { "unit": "terminals", "count": 62, "scope": "region" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "weather",
+        "hours": 1.5,
+        "crew": null,
+        "techs": 0,
+        "truckRolls": 0,
+        "parts": [],
+        "costUsd": 0
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8555",
+    "type": "incident",
+    "ts": "2026-08-12T01:20:04.778Z",
+    "city": "Plano",
+    "lat": 33.0198,
+    "lng": -96.6989,
+    "serviceIssue": {
+      "type": "firstnet",
+      "category": "federal",
+      "ticketRef": "INC-2026-8555",
+      "narrative": "Plano PD unit PPD-UNIT-44 reporting priority preemption not applied during active scene. 6 preemption events on PLA-FN-201 tower, QCI 65 on B14. 11 units affected across 3 sites.",
+      "severity": "p1",
+      "symptoms": ["priority-preemption", "qos-not-honored", "active-scene"],
+      "impact": { "unit": "units", "count": 11, "scope": "metro" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "config-error",
+        "hours": 0.5,
+        "crew": "noc",
+        "techs": 1,
+        "truckRolls": 0,
+        "parts": [],
+        "costUsd": 0
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8333",
+    "type": "incident",
+    "ts": "2026-08-11T22:00:04.778Z",
+    "city": "Denver",
+    "lat": 39.7392,
+    "lng": -104.9903,
+    "serviceIssue": {
+      "type": "enterprise",
+      "category": "business",
+      "ticketRef": "INC-2026-8333",
+      "narrative": "Boeing DEN campus reporting throughput drop on ATT-CKT-77310. Committed 1000Mbps, observing 240Mbps. Latency 196ms at DFW-02 handoff. SLA clock at 47 minutes. Gold tier customer.",
+      "severity": "p1",
+      "symptoms": ["throughput-drop", "bandwidth-shortfall", "sla-breach"],
+      "impact": { "unit": "sites", "count": 3, "scope": "metro" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "congestion",
+        "hours": 1.2,
+        "crew": "transport",
+        "techs": 1,
+        "truckRolls": 0,
+        "parts": [],
+        "costUsd": 0
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8222",
+    "type": "incident",
+    "ts": "2026-08-11T20:45:04.778Z",
+    "city": "Chicago",
+    "lat": 41.8781,
+    "lng": -87.6298,
+    "serviceIssue": {
+      "type": "edge",
+      "category": "infrastructure",
+      "ticketRef": "INC-2026-8222",
+      "narrative": "Registry throttle on EDGE-CHI-793 in edge-central-04 cluster. 142 image pull failures, 19 pods pending. CPU at 90%, memory at 78%. Video-analytics workload degraded.",
+      "severity": "p2",
+      "symptoms": ["registry-throttle", "pods-pending", "cpu-saturation"],
+      "impact": { "unit": "workloads", "count": 19, "scope": "single" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "rate-limit",
+        "hours": 0.8,
+        "crew": "cloud",
+        "techs": 1,
+        "truckRolls": 0,
+        "parts": [],
+        "costUsd": 0
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8111",
+    "type": "incident",
+    "ts": "2026-08-11T19:30:04.778Z",
+    "city": "Portland",
+    "lat": 45.5152,
+    "lng": -122.6784,
+    "serviceIssue": {
+      "type": "5g",
+      "category": "consumer",
+      "ticketRef": "INC-2026-8111",
+      "narrative": "23 handover failures between POR-5G-861 Sector-B and POR-5G-862-A on n77 band. RSRP -112dBm, SINR 1.4dB. Reproduced on drive test DT-2026-0812-OR. 1240 estimated users affected.",
+      "severity": "p2",
+      "symptoms": ["handover-failure", "cell-flapping", "poor-sinr"],
+      "impact": { "unit": "subscribers", "count": 1240, "scope": "segment" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "antenna-tilt",
+        "hours": 2.0,
+        "crew": "rf",
+        "techs": 2,
+        "truckRolls": 1,
+        "parts": [],
+        "costUsd": 1800
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": [
+      { "mediaId": "MED-8111-1", "kind": "video", "url": "/mock/tower-inspection.mp4", "caption": "Drone tower inspection" }
+    ]
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8999",
+    "type": "incident",
+    "ts": "2026-08-11T16:00:04.778Z",
+    "city": "Austin",
+    "lat": 30.2672,
+    "lng": -97.7431,
+    "serviceIssue": {
+      "type": "iot",
+      "category": "emerging_tech",
+      "ticketRef": "INC-2026-8999",
+      "narrative": "No uplink from SIM-30408731 on LTE-M since yesterday 18:04. Battery at 4%. Part of Fiber Attenuator fleet in East region. 27 of 1840 devices in fleet also silent. Firmware 2.4.1.",
+      "severity": "p3",
+      "symptoms": ["no-uplink", "device-offline", "low-battery"],
+      "impact": { "unit": "devices", "count": 27, "scope": "region" },
+      "resolution": {
+        "state": "open",
+        "rootCause": null,
+        "hours": null,
+        "crew": "iot",
+        "techs": 1,
+        "truckRolls": 1,
+        "parts": ["battery-pack"],
+        "costUsd": 200
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": 0.87
+    },
+    "media": []
+  },
+  {
+    "_id": "6a7be1f056d4eaa839dc8777",
+    "type": "incident",
+    "ts": "2026-08-11T12:30:04.778Z",
+    "city": "Los Angeles",
+    "lat": 34.0522,
+    "lng": -118.2437,
+    "serviceIssue": {
+      "type": "cloud-network",
+      "category": "infrastructure",
+      "ticketRef": "INC-2026-8777",
+      "narrative": "Route flap with AS65021 at LAX-EQX-LA3 peering location. 47 flaps, session up only 88 seconds. 612 of 1840 prefixes withdrawn on the 10G circuit. Azure ExpressRoute customer affected.",
+      "severity": "p1",
+      "symptoms": ["route-flap", "bgp-instability", "prefixes-withdrawn"],
+      "impact": { "unit": "prefixes", "count": 612, "scope": "region" },
+      "resolution": {
+        "state": "resolved",
+        "rootCause": "peer-config",
+        "hours": 1.5,
+        "crew": "peering",
+        "techs": 1,
+        "truckRolls": 0,
+        "parts": [],
+        "costUsd": 0
+      }
+    },
+    "correlation": {
+      "clusterId": null,
+      "isSystemic": false,
+      "novelty": null
+    },
+    "media": []
+  }
+]
