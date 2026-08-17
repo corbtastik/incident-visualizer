@@ -24,7 +24,6 @@ import ImagePreview from '../components/media/ImagePreview';
 import ImageViewer from '../components/media/ImageViewer';
 import DocumentPreview from '../components/media/DocumentPreview';
 import DocumentViewer from '../components/media/DocumentViewer';
-import DotSizeControl from '../components/map/DotSizeControl';
 
 // Sample documents for testing (public domain PDFs)
 const SAMPLE_DOCUMENTS = [
@@ -432,9 +431,6 @@ export default function DetailShell() {
               mapStyle={MAP_CONFIG.darkStyle}
             />
           </DeckGL>
-
-          {/* Dot Size Control */}
-          <DotSizeControl />
 
           {/* Map Legend */}
           <div className="detail-center__legend">

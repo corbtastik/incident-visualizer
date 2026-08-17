@@ -21,7 +21,6 @@ import { useMapSettings } from '../context/MapSettingsContext';
 import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, MODE_COLOR, PIN, getPinConfig } from '../utils/colors';
 import { MAP_CONFIG, SEARCH_MODES, CATEGORIES } from '../utils/constants';
 import { ScatterplotLayer } from '@deck.gl/layers';
-import DotSizeControl from '../components/map/DotSizeControl';
 
 export default function SearchShell() {
   const navigate = useNavigate();
@@ -219,37 +218,6 @@ export default function SearchShell() {
 
   return (
     <div className="search-shell">
-      {/* ══════════════════════════════════════════════════════════════════
-          TOP HEADER BAR
-          ══════════════════════════════════════════════════════════════════ */}
-      <header className="search-header-bar">
-        <div className="search-header-bar__left">
-          <div className="search-header-bar__title">Incident Intelligence</div>
-          <div className="search-header-bar__connection">
-            att-demo.r9xpj.mongodb.net
-          </div>
-          <div className="search-header-bar__collection">incident_events</div>
-        </div>
-
-        <div className="search-header-bar__center">
-          <div className="search-header-bar__input-wrap">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-header-bar__input"
-              placeholder="Search incidents..."
-            />
-            <span className="search-header-bar__badge">voyage-4</span>
-          </div>
-          <button className="search-header-bar__btn">Search</button>
-        </div>
-
-        <div className="search-header-bar__right">
-          <span className="search-header-bar__events">323 events</span>
-        </div>
-      </header>
-
       {/* ══════════════════════════════════════════════════════════════════
           RESULTS BANNER
           ══════════════════════════════════════════════════════════════════ */}
@@ -653,9 +621,6 @@ export default function SearchShell() {
                     mapStyle={MAP_CONFIG.darkStyle}
                   />
                 </DeckGL>
-
-                {/* Dot Size Control */}
-                <DotSizeControl />
 
                 {hoverInfo && (
                   <div

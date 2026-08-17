@@ -59,6 +59,83 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   App Layout (global header + control bar + content)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-layout__content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Control Bar - app-level controls below header */
+.control-bar {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  background: var(--elevated);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 24px;
+}
+
+.control-bar__group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.control-bar__label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.control-bar__slider {
+  width: 100px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.control-bar__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--cat-consumer);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.control-bar__slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--cat-consumer);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+.control-bar__value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  min-width: 32px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Typography
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -132,7 +209,7 @@ body {
 .search-shell {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   background: var(--app-bg);
   overflow: hidden;
 }
@@ -3249,7 +3326,7 @@ body {
 .detail-shell {
   display: grid;
   grid-template-columns: 320px 1fr 380px;
-  height: 100vh;
+  height: 100%;
   background: var(--app-bg);
   overflow: hidden;
 }
