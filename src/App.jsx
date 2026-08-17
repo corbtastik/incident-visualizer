@@ -10,6 +10,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+import { MapSettingsProvider } from './context/MapSettingsContext';
 import SearchShell from './shells/SearchShell';
 import DetailShell from './shells/DetailShell';
 
@@ -17,21 +18,23 @@ import './styles.css';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Search Shell - main view */}
-        <Route path="/" element={<SearchShell />} />
-        <Route path="/search" element={<SearchShell />} />
+    <MapSettingsProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Search Shell - main view */}
+          <Route path="/" element={<SearchShell />} />
+          <Route path="/search" element={<SearchShell />} />
 
-        {/* Detail Shell - incident detail */}
-        <Route path="/incident/:id" element={<DetailShell />} />
+          {/* Detail Shell - incident detail */}
+          <Route path="/incident/:id" element={<DetailShell />} />
 
-        {/* Detail Shell - cluster detail */}
-        <Route path="/cluster/:id" element={<DetailShell />} />
+          {/* Detail Shell - cluster detail */}
+          <Route path="/cluster/:id" element={<DetailShell />} />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </MapSettingsProvider>
   );
 }

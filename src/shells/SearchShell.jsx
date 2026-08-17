@@ -17,13 +17,16 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useMockData } from '../hooks/useMockData';
+import { useMapSettings } from '../context/MapSettingsContext';
 import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, MODE_COLOR, PIN, getPinConfig } from '../utils/colors';
 import { MAP_CONFIG, SEARCH_MODES, CATEGORIES } from '../utils/constants';
 import { ScatterplotLayer } from '@deck.gl/layers';
+import DotSizeControl from '../components/map/DotSizeControl';
 
 export default function SearchShell() {
   const navigate = useNavigate();
   const { incidents, clusters, searchResults, umapCoords, loading } = useMockData();
+  const { dotSize } = useMapSettings();
 
   // Get detected cluster (if any)
   const detectedCluster = clusters?.[0] || null;
@@ -69,7 +72,14 @@ export default function SearchShell() {
     // Helper to get provenance for an incident
     const getProvenance = (d) => searchResults?.provenance?.[d._id] || null;
 
-    // Outer ring layer (r=25, for bothPipelines) - renders first (underneath)
+    // Scale factors relative to base dotSize
+    const notMatchedSize = dotSize * 0.64;
+    const innerRingRadius = dotSize * 1.45;
+    const outerRingRadius = dotSize * 2.27;
+    const innerRingWidth = Math.max(2, dotSize * 0.64);
+    const outerRingWidth = Math.max(2, dotSize * 0.45);
+
+    // Outer ring layer (for bothPipelines) - renders first (underneath)
     if (showRings) {
       layerList.push(new ScatterplotLayer({
         id: 'incident-rings-outer',
@@ -81,12 +91,12 @@ export default function SearchShell() {
         radiusUnits: 'pixels',
         lineWidthUnits: 'pixels',
         getPosition: d => [d.lng, d.lat],
-        getRadius: 25,
-        getLineWidth: 5,
+        getRadius: outerRingRadius,
+        getLineWidth: outerRingWidth,
         getLineColor: [165, 243, 252, 255], // #A5F3FC
       }));
 
-      // Inner ring layer (r=16, for semanticOnly and bothPipelines)
+      // Inner ring layer (for semanticOnly and bothPipelines)
       layerList.push(new ScatterplotLayer({
         id: 'incident-rings-inner',
         data: filteredIncidents.filter(d => {
@@ -100,8 +110,8 @@ export default function SearchShell() {
         radiusUnits: 'pixels',
         lineWidthUnits: 'pixels',
         getPosition: d => [d.lng, d.lat],
-        getRadius: 16,
-        getLineWidth: 7,
+        getRadius: innerRingRadius,
+        getLineWidth: innerRingWidth,
         getLineColor: [34, 211, 238, 255], // #22D3EE
       }));
     }
@@ -117,8 +127,8 @@ export default function SearchShell() {
       getPosition: d => [d.lng, d.lat],
       getRadius: d => {
         const provenance = getProvenance(d);
-        if (!provenance) return 7; // notMatched
-        return 11; // all matched incidents
+        if (!provenance) return notMatchedSize; // notMatched: smaller
+        return dotSize; // all matched incidents
       },
       getFillColor: d => {
         const provenance = getProvenance(d);
@@ -130,13 +140,13 @@ export default function SearchShell() {
         return baseColor;
       },
       updateTriggers: {
-        getRadius: [searchResults?.provenance],
+        getRadius: [searchResults?.provenance, dotSize],
         getFillColor: [searchResults?.provenance],
       },
     }));
 
     return layerList;
-  }, [filteredIncidents, searchResults, searchMode, compareMode]);
+  }, [filteredIncidents, searchResults, searchMode, compareMode, dotSize]);
 
   const handleIncidentClick = useCallback((info) => {
     if (info.object) navigate(`/incident/${info.object._id}`);
@@ -643,6 +653,9 @@ export default function SearchShell() {
                     mapStyle={MAP_CONFIG.darkStyle}
                   />
                 </DeckGL>
+
+                {/* Dot Size Control */}
+                <DotSizeControl />
 
                 {hoverInfo && (
                   <div

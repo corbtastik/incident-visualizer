@@ -4678,3 +4678,91 @@ body {
   font-size: 13px;
   color: var(--mdb-green);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dot Size Control (Map overlay)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dot-size-control {
+  position: absolute;
+  bottom: 24px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  z-index: 10;
+}
+
+.dot-size-control__label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.dot-size-control__slider-container {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dot-size-control__slider {
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+  width: 8px;
+  height: 80px;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Vertical slider track */
+.dot-size-control__slider::-webkit-slider-runnable-track {
+  width: 4px;
+  height: 100%;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.dot-size-control__slider::-moz-range-track {
+  width: 4px;
+  height: 100%;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* Vertical slider thumb */
+.dot-size-control__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--cat-consumer);
+  border-radius: 50%;
+  cursor: pointer;
+  margin-left: -5px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.dot-size-control__slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--cat-consumer);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.dot-size-control__preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}

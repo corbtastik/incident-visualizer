@@ -14,6 +14,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useMockData } from '../hooks/useMockData';
+import { useMapSettings } from '../context/MapSettingsContext';
 import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, getCategoryFromType } from '../utils/colors';
 import { MAP_CONFIG } from '../utils/constants';
 import { formatDate, formatScore, formatCurrency, formatDuration } from '../utils/formatters';
@@ -23,6 +24,7 @@ import ImagePreview from '../components/media/ImagePreview';
 import ImageViewer from '../components/media/ImageViewer';
 import DocumentPreview from '../components/media/DocumentPreview';
 import DocumentViewer from '../components/media/DocumentViewer';
+import DotSizeControl from '../components/map/DotSizeControl';
 
 // Sample documents for testing (public domain PDFs)
 const SAMPLE_DOCUMENTS = [
@@ -72,6 +74,7 @@ export default function DetailShell() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { incidents, clusters, neighbours } = useMockData();
+  const { dotSize } = useMapSettings();
 
   // Determine if this is an incident or cluster view
   const isCluster = id?.startsWith('CLUSTER-');
@@ -115,6 +118,11 @@ export default function DetailShell() {
     if (!incident) return [];
     const layerList = [];
 
+    // Scale factors for different dot types
+    const neighbourSize = dotSize * 0.73;  // slightly smaller than main
+    const mainSize = dotSize * 1.27;       // slightly larger, with ring
+    const ringWidth = Math.max(2, dotSize * 0.27);
+
     const neighbourIncidents = incidentNeighbours
       .map(n => incidents.find(i => i.serviceIssue?.ticketRef === n.incidentId))
       .filter(Boolean);
@@ -144,11 +152,10 @@ export default function DetailShell() {
       opacity: 0.85,
       stroked: false,
       filled: true,
-      radiusMinPixels: 6,
-      radiusMaxPixels: 10,
+      radiusUnits: 'pixels',
       getPosition: d => [d.lng, d.lat],
       getFillColor: d => CATEGORY_COLORS_RGBA[d.serviceIssue?.category] || [90, 102, 114, 200],
-      getRadius: 8,
+      getRadius: neighbourSize,
     }));
 
     // Add main incident point (on top)
@@ -159,17 +166,17 @@ export default function DetailShell() {
       opacity: 1,
       stroked: true,
       filled: true,
-      radiusMinPixels: 14,
-      radiusMaxPixels: 20,
-      lineWidthMinPixels: 3,
+      radiusUnits: 'pixels',
+      lineWidthUnits: 'pixels',
       getPosition: d => [d.lng, d.lat],
       getFillColor: d => CATEGORY_COLORS_RGBA[d.serviceIssue?.category] || [90, 102, 114, 200],
       getLineColor: [34, 211, 238, 255],
-      getRadius: 14,
+      getRadius: mainSize,
+      getLineWidth: ringWidth,
     }));
 
     return layerList;
-  }, [incident, incidents, incidentNeighbours]);
+  }, [incident, incidents, incidentNeighbours, dotSize]);
 
   // If no item found
   if (!incident && !cluster) {
@@ -425,6 +432,9 @@ export default function DetailShell() {
               mapStyle={MAP_CONFIG.darkStyle}
             />
           </DeckGL>
+
+          {/* Dot Size Control */}
+          <DotSizeControl />
 
           {/* Map Legend */}
           <div className="detail-center__legend">
