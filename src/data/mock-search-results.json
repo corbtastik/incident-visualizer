@@ -1,100 +1,560 @@
 {
   "query": "backhoe damage near SE-MCA-2211",
-  "lexical": {
-    "results": ["6a7be1f056d4eaa839dc8841", "6a7be1f056d4eaa839dc8203"],
-    "latencyMs": 12,
-    "indexes": 1
+  "embeddingModel": "voyage-4",
+  "corpusTotal": 323,
+  "counts": {
+    "lexicalTotal": 7,
+    "semanticTotal": 19,
+    "hybridTotal": 22,
+    "lexicalOnly": 3,
+    "semanticOnly": 15,
+    "bothPipelines": 4,
+    "notMatched": 301,
+    "recallLiftPct": 214
   },
-  "semantic": {
-    "results": [
-      "6a7be1f056d4eaa839dc8841",
-      "6a7be1f056d4eaa839dc8002",
-      "6a7be1f056d4eaa839dc8455",
-      "6a7be1f056d4eaa839dc8203",
-      "6a7be1f056d4eaa839dc8001",
-      "6a7be1f056d4eaa839dc8744",
-      "6a7be1f056d4eaa839dc8712",
-      "6a7be1f056d4eaa839dc8003",
-      "6a7be1f056d4eaa839dc8004",
-      "6a7be1f056d4eaa839dc8005",
-      "6a7be1f056d4eaa839dc8006",
-      "6a7be1f056d4eaa839dc8991",
-      "6a7be1f056d4eaa839dc8890",
-      "6a7be1f056d4eaa839dc8555",
-      "6a7be1f056d4eaa839dc8333"
-    ],
-    "latencyMs": 18,
-    "indexes": 1
-  },
-  "hybrid": {
-    "results": [
-      "6a7be1f056d4eaa839dc8841",
-      "6a7be1f056d4eaa839dc8203",
-      "6a7be1f056d4eaa839dc8002",
-      "6a7be1f056d4eaa839dc8455",
-      "6a7be1f056d4eaa839dc8001",
-      "6a7be1f056d4eaa839dc8744",
-      "6a7be1f056d4eaa839dc8712",
-      "6a7be1f056d4eaa839dc8003",
-      "6a7be1f056d4eaa839dc8004",
-      "6a7be1f056d4eaa839dc8005",
-      "6a7be1f056d4eaa839dc8006",
-      "6a7be1f056d4eaa839dc8991",
-      "6a7be1f056d4eaa839dc8890",
-      "6a7be1f056d4eaa839dc8555",
-      "6a7be1f056d4eaa839dc8333",
-      "6a7be1f056d4eaa839dc8222",
-      "6a7be1f056d4eaa839dc8111",
-      "6a7be1f056d4eaa839dc8999",
-      "6a7be1f056d4eaa839dc8777",
-      "6a7be1f056d4eaa839dc8007"
-    ],
-    "weights": { "lexical": 0.38, "semantic": 0.62 },
-    "latencyMs": 24,
-    "indexes": 2
-  },
-  "provenance": {
-    "6a7be1f056d4eaa839dc8841": "both",
-    "6a7be1f056d4eaa839dc8203": "both",
-    "6a7be1f056d4eaa839dc8002": "semantic",
-    "6a7be1f056d4eaa839dc8455": "semantic",
-    "6a7be1f056d4eaa839dc8001": "semantic",
-    "6a7be1f056d4eaa839dc8744": "semantic",
-    "6a7be1f056d4eaa839dc8712": "semantic",
-    "6a7be1f056d4eaa839dc8003": "semantic",
-    "6a7be1f056d4eaa839dc8004": "semantic",
-    "6a7be1f056d4eaa839dc8005": "semantic",
-    "6a7be1f056d4eaa839dc8006": "semantic",
-    "6a7be1f056d4eaa839dc8991": "semantic",
-    "6a7be1f056d4eaa839dc8890": "semantic",
-    "6a7be1f056d4eaa839dc8555": "semantic",
-    "6a7be1f056d4eaa839dc8333": "semantic",
-    "6a7be1f056d4eaa839dc8222": "semantic",
-    "6a7be1f056d4eaa839dc8111": "semantic",
-    "6a7be1f056d4eaa839dc8999": "semantic",
-    "6a7be1f056d4eaa839dc8777": "semantic",
-    "6a7be1f056d4eaa839dc8007": "semantic"
-  },
-  "scores": {
-    "6a7be1f056d4eaa839dc8841": 0.947,
-    "6a7be1f056d4eaa839dc8203": 0.912,
-    "6a7be1f056d4eaa839dc8002": 0.899,
-    "6a7be1f056d4eaa839dc8455": 0.891,
-    "6a7be1f056d4eaa839dc8001": 0.884,
-    "6a7be1f056d4eaa839dc8744": 0.864,
-    "6a7be1f056d4eaa839dc8712": 0.843,
-    "6a7be1f056d4eaa839dc8003": 0.831,
-    "6a7be1f056d4eaa839dc8004": 0.824,
-    "6a7be1f056d4eaa839dc8005": 0.812,
-    "6a7be1f056d4eaa839dc8006": 0.798,
-    "6a7be1f056d4eaa839dc8991": 0.776,
-    "6a7be1f056d4eaa839dc8890": 0.754,
-    "6a7be1f056d4eaa839dc8555": 0.732,
-    "6a7be1f056d4eaa839dc8333": 0.718,
-    "6a7be1f056d4eaa839dc8222": 0.695,
-    "6a7be1f056d4eaa839dc8111": 0.673,
-    "6a7be1f056d4eaa839dc8999": 0.651,
-    "6a7be1f056d4eaa839dc8777": 0.628,
-    "6a7be1f056d4eaa839dc8007": 0.594
+  "modes": {
+    "lexical": {
+      "pipeline": {
+        "$search": {
+          "index": "inc_text",
+          "text": {
+            "query": "backhoe damage near SE-MCA-2211",
+            "path": [
+              "searchBlob"
+            ]
+          }
+        }
+      },
+      "limit": 100,
+      "latencyMs": 12,
+      "indexes": 1,
+      "embedCalls": 0,
+      "results": [
+        {
+          "ticketRef": "INC-2026-8841",
+          "provenance": "bothPipelines",
+          "lexicalRank": 1,
+          "lexicalScore": 0.94,
+          "vectorRank": 3,
+          "vectorScore": 0.89,
+          "fusedRank": 1,
+          "fusedScore": 0.97
+        },
+        {
+          "ticketRef": "INC-2026-8845",
+          "provenance": "bothPipelines",
+          "lexicalRank": 2,
+          "lexicalScore": 0.91,
+          "vectorRank": 6,
+          "vectorScore": 0.87,
+          "fusedRank": 2,
+          "fusedScore": 0.956
+        },
+        {
+          "ticketRef": "INC-2026-8860",
+          "provenance": "lexicalOnly",
+          "lexicalRank": 4,
+          "lexicalScore": 0.88,
+          "vectorRank": null,
+          "vectorScore": null,
+          "fusedRank": 20,
+          "fusedScore": 0.705
+        },
+        {
+          "ticketRef": "INC-2026-8848",
+          "provenance": "bothPipelines",
+          "lexicalRank": 3,
+          "lexicalScore": 0.88,
+          "vectorRank": 8,
+          "vectorScore": 0.85,
+          "fusedRank": 3,
+          "fusedScore": 0.946
+        },
+        {
+          "ticketRef": "INC-2026-8852",
+          "provenance": "bothPipelines",
+          "lexicalRank": 5,
+          "lexicalScore": 0.85,
+          "vectorRank": 11,
+          "vectorScore": 0.83,
+          "fusedRank": 4,
+          "fusedScore": 0.931
+        },
+        {
+          "ticketRef": "INC-2026-8863",
+          "provenance": "lexicalOnly",
+          "lexicalRank": 6,
+          "lexicalScore": 0.84,
+          "vectorRank": null,
+          "vectorScore": null,
+          "fusedRank": 21,
+          "fusedScore": 0.7
+        },
+        {
+          "ticketRef": "INC-2026-8866",
+          "provenance": "lexicalOnly",
+          "lexicalRank": 7,
+          "lexicalScore": 0.8,
+          "vectorRank": null,
+          "vectorScore": null,
+          "fusedRank": 22,
+          "fusedScore": 0.698
+        }
+      ]
+    },
+    "semantic": {
+      "pipeline": {
+        "$vectorSearch": {
+          "index": "inc_vec",
+          "path": "embedding.vector",
+          "queryVector": "[…1024 floats]",
+          "numCandidates": 500,
+          "limit": 100
+        }
+      },
+      "latencyMs": 48,
+      "indexes": 1,
+      "embedCalls": 1,
+      "results": [
+        {
+          "ticketRef": "INC-2026-9101",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 1,
+          "vectorScore": 0.905,
+          "fusedRank": 5,
+          "fusedScore": 0.816
+        },
+        {
+          "ticketRef": "INC-2026-9104",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 2,
+          "vectorScore": 0.894,
+          "fusedRank": 6,
+          "fusedScore": 0.811
+        },
+        {
+          "ticketRef": "INC-2026-8841",
+          "provenance": "bothPipelines",
+          "lexicalRank": 1,
+          "lexicalScore": 0.94,
+          "vectorRank": 3,
+          "vectorScore": 0.89,
+          "fusedRank": 1,
+          "fusedScore": 0.97
+        },
+        {
+          "ticketRef": "INC-2026-9107",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 4,
+          "vectorScore": 0.883,
+          "fusedRank": 7,
+          "fusedScore": 0.803
+        },
+        {
+          "ticketRef": "INC-2026-9112",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 5,
+          "vectorScore": 0.872,
+          "fusedRank": 8,
+          "fusedScore": 0.799
+        },
+        {
+          "ticketRef": "INC-2026-8845",
+          "provenance": "bothPipelines",
+          "lexicalRank": 2,
+          "lexicalScore": 0.91,
+          "vectorRank": 6,
+          "vectorScore": 0.87,
+          "fusedRank": 2,
+          "fusedScore": 0.956
+        },
+        {
+          "ticketRef": "INC-2026-9118",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 7,
+          "vectorScore": 0.861,
+          "fusedRank": 9,
+          "fusedScore": 0.792
+        },
+        {
+          "ticketRef": "INC-2026-9123",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 9,
+          "vectorScore": 0.85,
+          "fusedRank": 10,
+          "fusedScore": 0.785
+        },
+        {
+          "ticketRef": "INC-2026-8848",
+          "provenance": "bothPipelines",
+          "lexicalRank": 3,
+          "lexicalScore": 0.88,
+          "vectorRank": 8,
+          "vectorScore": 0.85,
+          "fusedRank": 3,
+          "fusedScore": 0.946
+        },
+        {
+          "ticketRef": "INC-2026-8712",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 10,
+          "vectorScore": 0.839,
+          "fusedRank": 11,
+          "fusedScore": 0.781
+        },
+        {
+          "ticketRef": "INC-2026-8852",
+          "provenance": "bothPipelines",
+          "lexicalRank": 5,
+          "lexicalScore": 0.85,
+          "vectorRank": 11,
+          "vectorScore": 0.83,
+          "fusedRank": 4,
+          "fusedScore": 0.931
+        },
+        {
+          "ticketRef": "INC-2026-8455",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 12,
+          "vectorScore": 0.828,
+          "fusedRank": 12,
+          "fusedScore": 0.775
+        },
+        {
+          "ticketRef": "INC-2026-8203",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 13,
+          "vectorScore": 0.817,
+          "fusedRank": 13,
+          "fusedScore": 0.772
+        },
+        {
+          "ticketRef": "INC-2026-7991",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 14,
+          "vectorScore": 0.806,
+          "fusedRank": 14,
+          "fusedScore": 0.769
+        },
+        {
+          "ticketRef": "INC-2026-7744",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 15,
+          "vectorScore": 0.795,
+          "fusedRank": 15,
+          "fusedScore": 0.766
+        },
+        {
+          "ticketRef": "INC-2026-8301",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 16,
+          "vectorScore": 0.784,
+          "fusedRank": 16,
+          "fusedScore": 0.763
+        },
+        {
+          "ticketRef": "INC-2026-8305",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 17,
+          "vectorScore": 0.773,
+          "fusedRank": 17,
+          "fusedScore": 0.76
+        },
+        {
+          "ticketRef": "INC-2026-8309",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 18,
+          "vectorScore": 0.762,
+          "fusedRank": 18,
+          "fusedScore": 0.758
+        },
+        {
+          "ticketRef": "INC-2026-8312",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 19,
+          "vectorScore": 0.751,
+          "fusedRank": 19,
+          "fusedScore": 0.755
+        }
+      ]
+    },
+    "hybrid": {
+      "pipeline": {
+        "$rankFusion": {
+          "input": {
+            "pipelines": {
+              "lexical": "[…]",
+              "semantic": "[…]"
+            }
+          },
+          "combination": {
+            "weights": {
+              "lexical": 0.38,
+              "semantic": 0.62
+            }
+          },
+          "scoreDetails": true
+        }
+      },
+      "weights": {
+        "lexical": 0.38,
+        "semantic": 0.62
+      },
+      "latencyMs": 61,
+      "indexes": 2,
+      "embedCalls": 1,
+      "results": [
+        {
+          "ticketRef": "INC-2026-8841",
+          "provenance": "bothPipelines",
+          "lexicalRank": 1,
+          "lexicalScore": 0.94,
+          "vectorRank": 3,
+          "vectorScore": 0.89,
+          "fusedRank": 1,
+          "fusedScore": 0.97
+        },
+        {
+          "ticketRef": "INC-2026-8845",
+          "provenance": "bothPipelines",
+          "lexicalRank": 2,
+          "lexicalScore": 0.91,
+          "vectorRank": 6,
+          "vectorScore": 0.87,
+          "fusedRank": 2,
+          "fusedScore": 0.956
+        },
+        {
+          "ticketRef": "INC-2026-8848",
+          "provenance": "bothPipelines",
+          "lexicalRank": 3,
+          "lexicalScore": 0.88,
+          "vectorRank": 8,
+          "vectorScore": 0.85,
+          "fusedRank": 3,
+          "fusedScore": 0.946
+        },
+        {
+          "ticketRef": "INC-2026-8852",
+          "provenance": "bothPipelines",
+          "lexicalRank": 5,
+          "lexicalScore": 0.85,
+          "vectorRank": 11,
+          "vectorScore": 0.83,
+          "fusedRank": 4,
+          "fusedScore": 0.931
+        },
+        {
+          "ticketRef": "INC-2026-9101",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 1,
+          "vectorScore": 0.905,
+          "fusedRank": 5,
+          "fusedScore": 0.816
+        },
+        {
+          "ticketRef": "INC-2026-9104",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 2,
+          "vectorScore": 0.894,
+          "fusedRank": 6,
+          "fusedScore": 0.811
+        },
+        {
+          "ticketRef": "INC-2026-9107",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 4,
+          "vectorScore": 0.883,
+          "fusedRank": 7,
+          "fusedScore": 0.803
+        },
+        {
+          "ticketRef": "INC-2026-9112",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 5,
+          "vectorScore": 0.872,
+          "fusedRank": 8,
+          "fusedScore": 0.799
+        },
+        {
+          "ticketRef": "INC-2026-9118",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 7,
+          "vectorScore": 0.861,
+          "fusedRank": 9,
+          "fusedScore": 0.792
+        },
+        {
+          "ticketRef": "INC-2026-9123",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 9,
+          "vectorScore": 0.85,
+          "fusedRank": 10,
+          "fusedScore": 0.785
+        },
+        {
+          "ticketRef": "INC-2026-8712",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 10,
+          "vectorScore": 0.839,
+          "fusedRank": 11,
+          "fusedScore": 0.781
+        },
+        {
+          "ticketRef": "INC-2026-8455",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 12,
+          "vectorScore": 0.828,
+          "fusedRank": 12,
+          "fusedScore": 0.775
+        },
+        {
+          "ticketRef": "INC-2026-8203",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 13,
+          "vectorScore": 0.817,
+          "fusedRank": 13,
+          "fusedScore": 0.772
+        },
+        {
+          "ticketRef": "INC-2026-7991",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 14,
+          "vectorScore": 0.806,
+          "fusedRank": 14,
+          "fusedScore": 0.769
+        },
+        {
+          "ticketRef": "INC-2026-7744",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 15,
+          "vectorScore": 0.795,
+          "fusedRank": 15,
+          "fusedScore": 0.766
+        },
+        {
+          "ticketRef": "INC-2026-8301",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 16,
+          "vectorScore": 0.784,
+          "fusedRank": 16,
+          "fusedScore": 0.763
+        },
+        {
+          "ticketRef": "INC-2026-8305",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 17,
+          "vectorScore": 0.773,
+          "fusedRank": 17,
+          "fusedScore": 0.76
+        },
+        {
+          "ticketRef": "INC-2026-8309",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 18,
+          "vectorScore": 0.762,
+          "fusedRank": 18,
+          "fusedScore": 0.758
+        },
+        {
+          "ticketRef": "INC-2026-8312",
+          "provenance": "semanticOnly",
+          "lexicalRank": null,
+          "lexicalScore": null,
+          "vectorRank": 19,
+          "vectorScore": 0.751,
+          "fusedRank": 19,
+          "fusedScore": 0.755
+        },
+        {
+          "ticketRef": "INC-2026-8860",
+          "provenance": "lexicalOnly",
+          "lexicalRank": 4,
+          "lexicalScore": 0.88,
+          "vectorRank": null,
+          "vectorScore": null,
+          "fusedRank": 20,
+          "fusedScore": 0.705
+        },
+        {
+          "ticketRef": "INC-2026-8863",
+          "provenance": "lexicalOnly",
+          "lexicalRank": 6,
+          "lexicalScore": 0.84,
+          "vectorRank": null,
+          "vectorScore": null,
+          "fusedRank": 21,
+          "fusedScore": 0.7
+        },
+        {
+          "ticketRef": "INC-2026-8866",
+          "provenance": "lexicalOnly",
+          "lexicalRank": 7,
+          "lexicalScore": 0.8,
+          "vectorRank": null,
+          "vectorScore": null,
+          "fusedRank": 22,
+          "fusedScore": 0.698
+        }
+      ]
+    }
   }
 }

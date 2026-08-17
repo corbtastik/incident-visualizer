@@ -24,27 +24,43 @@ export const CATEGORY_COLORS_RGBA = {
   infrastructure: [251, 191, 36, 200],
 };
 
-// Search mode colors - unified cyan ramp for search UI
+// Search mode colors - unified cyan ramp for search UI chrome
+// Used for: mode buttons, pane headers, counts, HUD strip, focus states
 export const MODE_COLOR = {
   lexical:  '#0E9BC4',
   semantic: '#22D3EE',
   hybrid:   '#A5F3FC',
 };
 
-// State colors - for retrieval provenance (legacy, maps to MODE_COLOR)
+// Provenance colors - per-result retrieval state (DIFFERENT from search mode)
+// Used for: result card dots, map pin rings, donut segments, overlap bar
+export const PROVENANCE_COLOR = {
+  lexicalOnly:   '#0300AB',  // deep blue
+  semanticOnly:  '#22D3EE',  // cyan (unchanged)
+  bothPipelines: '#FFFFFF',  // white - categorical break, strongest state
+};
+
+// Provenance colors as RGBA arrays (for deck.gl)
+export const PROVENANCE_COLOR_RGBA = {
+  lexicalOnly:   [3, 0, 171, 255],     // #0300AB
+  semanticOnly:  [34, 211, 238, 255],  // #22D3EE
+  bothPipelines: [255, 255, 255, 255], // #FFFFFF
+};
+
+// Legacy STATE_COLORS - kept for backwards compatibility, maps to PROVENANCE_COLOR
 export const STATE_COLORS = {
-  lexical:  '#0E9BC4',  // was #94A3B8
-  semantic: '#22D3EE',  // was #00ED64 - CRITICAL: no longer green
-  hybrid:   '#A5F3FC',  // was #22D3EE
+  lexical:  PROVENANCE_COLOR.lexicalOnly,
+  semantic: PROVENANCE_COLOR.semanticOnly,
+  hybrid:   PROVENANCE_COLOR.bothPipelines,
   novel:    '#FF6B4A',
   systemic: '#FF3B6B',
 };
 
-// State colors as RGBA arrays (for deck.gl)
+// Legacy STATE_COLORS_RGBA
 export const STATE_COLORS_RGBA = {
-  lexical:  [14, 155, 196, 200],   // #0E9BC4
+  lexical:  [3, 0, 171, 200],      // #0300AB
   semantic: [34, 211, 238, 200],   // #22D3EE
-  hybrid:   [165, 243, 252, 200],  // #A5F3FC
+  hybrid:   [255, 255, 255, 200],  // #FFFFFF
   novel:    [255, 107, 74, 200],
   systemic: [255, 59, 107, 200],
 };
@@ -53,9 +69,9 @@ export const STATE_COLORS_RGBA = {
 export const PIN = {
   notMatched:    { r: 7,  fillOpacity: 0.25, rings: [] },
   lexicalOnly:   { r: 11, fillOpacity: 1,    rings: [] },
-  semanticOnly:  { r: 11, fillOpacity: 1,    rings: [{ r: 16, w: 7, color: '#22D3EE' }] },
-  bothPipelines: { r: 11, fillOpacity: 1,    rings: [{ r: 16, w: 7, color: '#22D3EE' },
-                                                     { r: 25, w: 5, color: '#A5F3FC' }] },
+  semanticOnly:  { r: 11, fillOpacity: 1,    rings: [{ r: 16, w: 7, color: PROVENANCE_COLOR.semanticOnly }] },
+  bothPipelines: { r: 11, fillOpacity: 1,    rings: [{ r: 16, w: 7, color: PROVENANCE_COLOR.semanticOnly },
+                                                     { r: 25, w: 5, color: PROVENANCE_COLOR.bothPipelines }] },
 };
 
 // Helper to get pin config from provenance

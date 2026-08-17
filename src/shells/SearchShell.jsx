@@ -24,7 +24,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useMockData } from '../hooks/useMockData';
 import { useMapSettings } from '../context/MapSettingsContext';
-import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, MODE_COLOR } from '../utils/colors';
+import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, MODE_COLOR, PROVENANCE_COLOR, PROVENANCE_COLOR_RGBA } from '../utils/colors';
 import { MAP_CONFIG, CATEGORIES } from '../utils/constants';
 import { ScatterplotLayer } from '@deck.gl/layers';
 
@@ -113,6 +113,20 @@ export default function SearchShell() {
     });
   }, [currentModeResults, categories, severities]);
 
+  // DEBUG: Log provenance colors for visible result cards
+  useEffect(() => {
+    const visible = filteredResults.slice(0, 6);
+    console.log('[Provenance Debug] Six visible result cards:');
+    visible.forEach((inc, idx) => {
+      const prov = inc._result?.provenance;
+      const hex = prov === 'lexicalOnly' ? PROVENANCE_COLOR.lexicalOnly
+        : prov === 'semanticOnly' ? PROVENANCE_COLOR.semanticOnly
+        : prov === 'bothPipelines' ? PROVENANCE_COLOR.bothPipelines
+        : null;
+      console.log(`  #${idx + 1} ${inc.serviceIssue?.ticketRef}: provenance=${prov}, hex=${hex}`);
+    });
+  }, [filteredResults]);
+
   // All incidents for map (full corpus), with provenance info
   const allIncidentsWithProvenance = useMemo(() => {
     return incidents.map(inc => ({
@@ -156,7 +170,7 @@ export default function SearchShell() {
         getPosition: d => [d.lng, d.lat],
         getRadius: outerRingRadius,
         getLineWidth: outerRingWidth,
-        getLineColor: [165, 243, 252, 255], // #A5F3FC
+        getLineColor: PROVENANCE_COLOR_RGBA.bothPipelines, // #FFFFFF
       }));
 
       // Inner ring layer (for semanticOnly and bothPipelines)
@@ -174,7 +188,7 @@ export default function SearchShell() {
         getPosition: d => [d.lng, d.lat],
         getRadius: innerRingRadius,
         getLineWidth: innerRingWidth,
-        getLineColor: [34, 211, 238, 255], // #22D3EE
+        getLineColor: PROVENANCE_COLOR_RGBA.semanticOnly, // #22D3EE
       }));
     }
 
@@ -359,6 +373,11 @@ export default function SearchShell() {
             const result = inc._result;
             const score = result?.fusedScore ?? result?.vectorScore ?? result?.lexicalScore ?? 0;
             const isTop = idx === 0;
+            const showProvenanceDot = (searchMode === 'hybrid' && !compareMode) || compareMode;
+            const provenanceColor = result?.provenance === 'lexicalOnly' ? PROVENANCE_COLOR.lexicalOnly
+              : result?.provenance === 'semanticOnly' ? PROVENANCE_COLOR.semanticOnly
+              : result?.provenance === 'bothPipelines' ? PROVENANCE_COLOR.bothPipelines
+              : null;
             return (
               <div
                 key={inc.serviceIssue?.ticketRef}
@@ -367,10 +386,18 @@ export default function SearchShell() {
               >
                 <div className="results-banner__card-rank">
                   #{idx + 1}
-                  <span
-                    className="results-banner__card-dot"
-                    style={{ backgroundColor: getCategoryColor(inc.serviceIssue?.category) }}
-                  />
+                  <span className="results-banner__card-dots">
+                    <span
+                      className="results-banner__card-dot"
+                      style={{ backgroundColor: getCategoryColor(inc.serviceIssue?.category) }}
+                    />
+                    {showProvenanceDot && provenanceColor && (
+                      <span
+                        className="results-banner__card-dot results-banner__card-dot--provenance"
+                        style={{ backgroundColor: provenanceColor }}
+                      />
+                    )}
+                  </span>
                 </div>
                 <div className="results-banner__card-score">{score.toFixed(3)}</div>
                 <div className="results-banner__card-ticket">{inc.serviceIssue?.ticketRef}</div>
@@ -925,7 +952,7 @@ export default function SearchShell() {
                     <circle
                       cx="50" cy="50" r="42"
                       fill="none"
-                      stroke={MODE_COLOR.hybrid}
+                      stroke={PROVENANCE_COLOR.bothPipelines}
                       strokeWidth="8"
                       strokeDasharray={`${donutData.bothArc} ${2 * Math.PI * 42 - donutData.bothArc}`}
                       strokeDashoffset="0"
@@ -934,7 +961,7 @@ export default function SearchShell() {
                     <circle
                       cx="50" cy="50" r="42"
                       fill="none"
-                      stroke={MODE_COLOR.semantic}
+                      stroke={PROVENANCE_COLOR.semanticOnly}
                       strokeWidth="8"
                       strokeDasharray={`${donutData.semanticArc} ${2 * Math.PI * 42 - donutData.semanticArc}`}
                       strokeDashoffset={donutData.semanticOffset}
@@ -943,7 +970,7 @@ export default function SearchShell() {
                     <circle
                       cx="50" cy="50" r="42"
                       fill="none"
-                      stroke={MODE_COLOR.lexical}
+                      stroke={PROVENANCE_COLOR.lexicalOnly}
                       strokeWidth="8"
                       strokeDasharray={`${donutData.lexicalArc} ${2 * Math.PI * 42 - donutData.lexicalArc}`}
                       strokeDashoffset={donutData.lexicalOffset}
@@ -953,24 +980,24 @@ export default function SearchShell() {
                     <text x="50" y="46" textAnchor="middle" fill="#E8EDF2" fontSize="18" fontWeight="600">
                       {counts.hybridTotal || 0}
                     </text>
-                    <text x="50" y="60" textAnchor="middle" fill={MODE_COLOR.semantic} fontSize="10">
+                    <text x="50" y="60" textAnchor="middle" fill={PROVENANCE_COLOR.semanticOnly} fontSize="10">
                       +{counts.semanticOnly || 0}
                     </text>
                   </svg>
                 </div>
                 <div className="result-composition__legend">
                   <div className="result-composition__item">
-                    <span className="result-composition__dot" style={{ background: MODE_COLOR.hybrid }} />
+                    <span className="result-composition__dot" style={{ background: PROVENANCE_COLOR.bothPipelines }} />
                     <span>both pipelines</span>
                     <span className="result-composition__value">{counts.bothPipelines || 0}</span>
                   </div>
                   <div className="result-composition__item">
-                    <span className="result-composition__dot" style={{ background: MODE_COLOR.semantic }} />
+                    <span className="result-composition__dot" style={{ background: PROVENANCE_COLOR.semanticOnly }} />
                     <span>semantic only</span>
                     <span className="result-composition__value">{counts.semanticOnly || 0}</span>
                   </div>
                   <div className="result-composition__item">
-                    <span className="result-composition__dot" style={{ background: MODE_COLOR.lexical }} />
+                    <span className="result-composition__dot" style={{ background: PROVENANCE_COLOR.lexicalOnly }} />
                     <span>lexical only</span>
                     <span className="result-composition__value">{counts.lexicalOnly || 0}</span>
                   </div>

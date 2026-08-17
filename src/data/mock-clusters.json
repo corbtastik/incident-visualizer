@@ -1,41 +1,105 @@
 [
   {
     "clusterId": "CLUSTER-2026-0812-004",
-    "seedId": "INC-2026-9101",
+    "seedTicketRef": "INC-2026-9101",
     "city": "Warrior",
     "state": "AL",
+    "ringSegment": "SE-WAR-1104",
     "members": [
-      { "incidentId": "INC-2026-9101", "type": "construction", "similarity": 1.0, "isSeed": true },
-      { "incidentId": "INC-2026-9104", "type": "fiber", "similarity": 0.88 },
-      { "incidentId": "INC-2026-9107", "type": "backhaul", "similarity": 0.86 },
-      { "incidentId": "INC-2026-9112", "type": "smartcell", "similarity": 0.84 },
-      { "incidentId": "INC-2026-9118", "type": "broadband", "similarity": 0.83 },
-      { "incidentId": "INC-2026-9123", "type": "voip", "similarity": 0.79 }
+      {
+        "ticketRef": "INC-2026-9101",
+        "type": "construction",
+        "category": "infrastructure",
+        "isSeed": true,
+        "similarityToSeed": null,
+        "tOffsetMin": 0,
+        "narrativeFragment": "Directional bore contacted unmarked conduit at 4ft depth on the SE-WAR ring segment."
+      },
+      {
+        "ticketRef": "INC-2026-9104",
+        "type": "fiber",
+        "category": "consumer",
+        "isSeed": false,
+        "similarityToSeed": 0.88,
+        "tOffsetMin": 2,
+        "narrativeFragment": "Optical power collapsed on PON 1/3/4 off OLT-WAR-07."
+      },
+      {
+        "ticketRef": "INC-2026-9107",
+        "type": "backhaul",
+        "category": "infrastructure",
+        "isSeed": false,
+        "similarityToSeed": 0.86,
+        "tOffsetMin": 4,
+        "narrativeFragment": "BH-WAR-118 errored seconds spiking, path unprotected."
+      },
+      {
+        "ticketRef": "INC-2026-9112",
+        "type": "smartcell",
+        "category": "infrastructure",
+        "isSeed": false,
+        "similarityToSeed": 0.84,
+        "tOffsetMin": 6,
+        "narrativeFragment": "SC-WAR-203 stopped reporting, no heartbeat since 03:07Z."
+      },
+      {
+        "ticketRef": "INC-2026-9118",
+        "type": "broadband",
+        "category": "consumer",
+        "isSeed": false,
+        "similarityToSeed": 0.83,
+        "tOffsetMin": 9,
+        "narrativeFragment": "Subscribers on NODE-WAR-012 report the internet just quit with no lights on the ONT."
+      },
+      {
+        "ticketRef": "INC-2026-9123",
+        "type": "voip",
+        "category": "business",
+        "isSeed": false,
+        "similarityToSeed": 0.79,
+        "tOffsetMin": 11,
+        "narrativeFragment": "Dead air on all inbound calls to the Warrior office."
+      }
     ],
+    "stats": {
+      "memberCount": 6,
+      "distinctTypes": 6,
+      "distinctCategories": 3,
+      "maxPairwiseKm": 8.2,
+      "spanMinutes": 11,
+      "tightestPair": 0.91,
+      "controlExcluded": 1
+    },
     "controlCase": {
-      "incidentId": "INC-2026-9130",
+      "ticketRef": "INC-2026-9130",
       "type": "datacenter",
-      "similarity": 0.31,
+      "category": "infrastructure",
+      "similarityToSeed": 0.31,
       "distanceKm": 4.1
     },
     "detection": {
-      "window": "6h",
-      "radius": "50 km",
-      "threshold": 5,
-      "similarity": 0.82,
+      "windowHours": 6,
+      "radiusKm": 50,
+      "minNeighbours": 5,
+      "similarityFloor": 0.82,
       "scoredAt": "2026-08-12T03:01:15Z",
       "actualSpanKm": 8.2
     },
     "impact": {
-      "ticketsCollapsed": 6,
+      "ticketsCollapsed": {
+        "from": 6,
+        "to": 1
+      },
       "truckRollsAvoided": 5,
-      "estSavedUsd": 19200
+      "estSavedUsd": 19200,
+      "derivation": "5 x $3,840 median splice-crew roll"
     },
     "inferredRootCause": {
       "description": "Third-party directional bore strike",
       "confidence": 0.86,
-      "seedIncident": "INC-2026-9101",
-      "quote": "Directional bore contacted unmarked conduit at 4ft"
+      "seedTicketRef": "INC-2026-9101",
+      "quote": "Directional bore contacted unmarked conduit",
+      "downstreamNote": "5 downstream incidents consistent with loss of the SE-WAR ring segment"
     }
   }
 ]

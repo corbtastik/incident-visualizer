@@ -24,7 +24,17 @@
   --cat-federal: #F472B6;
   --cat-infrastructure: #FBBF24;
 
-  /* Search mode colors (unified cyan ramp) */
+  /* Search mode colors (unified cyan ramp) - for UI chrome */
+  --mode-lexical: #0E9BC4;
+  --mode-semantic: #22D3EE;
+  --mode-hybrid: #A5F3FC;
+
+  /* Provenance colors - per-result retrieval state (DIFFERENT from search mode) */
+  --prov-lexical-only: #0300AB;   /* deep blue */
+  --prov-semantic-only: #22D3EE;  /* cyan (unchanged) */
+  --prov-both-pipelines: #FFFFFF; /* white - categorical break */
+
+  /* Legacy state colors - kept for compatibility */
   --state-lexical: #0E9BC4;
   --state-semantic: #22D3EE;
   --state-hybrid: #A5F3FC;
@@ -406,9 +416,15 @@ body {
   margin-bottom: 2px;
 }
 
+.results-banner__card-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .results-banner__card-dot {
-  width: 6px;
-  height: 6px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
 }
 
@@ -3101,15 +3117,21 @@ body {
 }
 
 .result-overlap__bar-segment--lexical {
-  background: var(--state-lexical);
+  background: var(--prov-lexical-only);
 }
 
 .result-overlap__bar-segment--semantic {
-  background: var(--state-semantic);
+  background: var(--prov-semantic-only);
 }
 
 .result-overlap__bar-segment--both {
-  background: var(--state-hybrid);
+  background: #E2F4FA;
+}
+
+/* Lexical segment needs white text for readability against deep blue */
+.result-overlap__bar-segment--lexical .result-overlap__bar-label,
+.result-overlap__bar-segment--lexical .result-overlap__bar-value {
+  color: #FFFFFF;
 }
 
 .result-overlap__bar-label {
@@ -3147,15 +3169,15 @@ body {
 }
 
 .result-overlap__dot--lexical {
-  background: var(--state-lexical);
+  background: var(--prov-lexical-only);
 }
 
 .result-overlap__dot--semantic {
-  background: var(--state-semantic);
+  background: var(--prov-semantic-only);
 }
 
 .result-overlap__dot--both {
-  background: var(--state-hybrid);
+  background: var(--prov-both-pipelines);
 }
 
 /* Legacy Venn styles (keeping for compatibility) */
