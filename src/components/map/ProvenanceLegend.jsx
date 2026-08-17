@@ -5,11 +5,12 @@
  */
 
 import React from 'react';
+import { MODE_COLOR } from '../../utils/colors';
 
 const PROVENANCE_ITEMS = [
-  { id: 'both', color: '#22D3EE', label: 'Anchor (both)' },
-  { id: 'semantic', color: '#00ED64', label: 'Semantic only' },
-  { id: 'lexical', color: '#94A3B8', label: 'Lexical only' },
+  { id: 'both', color: MODE_COLOR.hybrid, label: 'Anchor (both)' },
+  { id: 'semantic', color: MODE_COLOR.semantic, label: 'Semantic only' },
+  { id: 'lexical', color: MODE_COLOR.lexical, label: 'Lexical only' },
 ];
 
 export default function ProvenanceLegend({ visible = true }) {

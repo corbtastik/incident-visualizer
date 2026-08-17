@@ -6,40 +6,67 @@
  */
 
 // Category colors - use these for dots, pins, chart segments
+// NOTE: business, consumer, emerging_tech updated to avoid cyan collision
 export const CATEGORY_COLORS = {
-  business:       '#4F8FFF',
-  consumer:       '#00ED64',
-  emerging_tech:  '#A78BFA',
+  business:       '#818CF8',  // was #4F8FFF
+  consumer:       '#4ADE80',  // was #00ED64
+  emerging_tech:  '#C084FC',  // was #A78BFA
   federal:        '#F472B6',
   infrastructure: '#FBBF24',
 };
 
 // Category colors as RGBA arrays (for deck.gl)
 export const CATEGORY_COLORS_RGBA = {
-  business:       [79, 143, 255, 200],
-  consumer:       [0, 237, 100, 200],
-  emerging_tech:  [167, 139, 250, 200],
+  business:       [129, 140, 248, 200],  // #818CF8
+  consumer:       [74, 222, 128, 200],   // #4ADE80
+  emerging_tech:  [192, 132, 252, 200],  // #C084FC
   federal:        [244, 114, 182, 200],
   infrastructure: [251, 191, 36, 200],
 };
 
-// State colors - for retrieval provenance
+// Search mode colors - unified cyan ramp for search UI
+export const MODE_COLOR = {
+  lexical:  '#0E9BC4',
+  semantic: '#22D3EE',
+  hybrid:   '#A5F3FC',
+};
+
+// State colors - for retrieval provenance (legacy, maps to MODE_COLOR)
 export const STATE_COLORS = {
-  lexical:  '#94A3B8',
-  semantic: '#00ED64',
-  hybrid:   '#22D3EE',
+  lexical:  '#0E9BC4',  // was #94A3B8
+  semantic: '#22D3EE',  // was #00ED64 - CRITICAL: no longer green
+  hybrid:   '#A5F3FC',  // was #22D3EE
   novel:    '#FF6B4A',
   systemic: '#FF3B6B',
 };
 
 // State colors as RGBA arrays (for deck.gl)
 export const STATE_COLORS_RGBA = {
-  lexical:  [148, 163, 184, 200],
-  semantic: [0, 237, 100, 200],
-  hybrid:   [34, 211, 238, 200],
+  lexical:  [14, 155, 196, 200],   // #0E9BC4
+  semantic: [34, 211, 238, 200],   // #22D3EE
+  hybrid:   [165, 243, 252, 200],  // #A5F3FC
   novel:    [255, 107, 74, 200],
   systemic: [255, 59, 107, 200],
 };
+
+// Pin geometry based on provenance
+export const PIN = {
+  notMatched:    { r: 7,  fillOpacity: 0.25, rings: [] },
+  lexicalOnly:   { r: 11, fillOpacity: 1,    rings: [] },
+  semanticOnly:  { r: 11, fillOpacity: 1,    rings: [{ r: 16, w: 7, color: '#22D3EE' }] },
+  bothPipelines: { r: 11, fillOpacity: 1,    rings: [{ r: 16, w: 7, color: '#22D3EE' },
+                                                     { r: 25, w: 5, color: '#A5F3FC' }] },
+};
+
+// Helper to get pin config from provenance
+export function getPinConfig(provenance) {
+  const map = {
+    'both': 'bothPipelines',
+    'semantic': 'semanticOnly',
+    'lexical': 'lexicalOnly',
+  };
+  return PIN[map[provenance]] || PIN.notMatched;
+}
 
 // Service type to category mapping - CRITICAL for correct colors
 export const TYPE_TO_CATEGORY = {

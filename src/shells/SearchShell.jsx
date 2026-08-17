@@ -17,7 +17,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useMockData } from '../hooks/useMockData';
-import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getProvenanceColorRGBA, getCategoryColor } from '../utils/colors';
+import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, MODE_COLOR, PIN, getPinConfig } from '../utils/colors';
 import { MAP_CONFIG, SEARCH_MODES, CATEGORIES } from '../utils/constants';
 import { ScatterplotLayer } from '@deck.gl/layers';
 
@@ -61,32 +61,82 @@ export default function SearchShell() {
     });
   }, [incidents, searchResults, searchMode, categories, severities]);
 
-  // Create map layers
+  // Create map layers with provenance-based rings
   const layers = useMemo(() => {
-    const layer = new ScatterplotLayer({
+    const showRings = searchMode === 'hybrid' || compareMode;
+    const layerList = [];
+
+    // Helper to get provenance for an incident
+    const getProvenance = (d) => searchResults?.provenance?.[d._id] || null;
+
+    // Outer ring layer (r=25, for bothPipelines) - renders first (underneath)
+    if (showRings) {
+      layerList.push(new ScatterplotLayer({
+        id: 'incident-rings-outer',
+        data: filteredIncidents.filter(d => getProvenance(d) === 'both'),
+        pickable: false,
+        opacity: 1,
+        stroked: true,
+        filled: false,
+        radiusUnits: 'pixels',
+        lineWidthUnits: 'pixels',
+        getPosition: d => [d.lng, d.lat],
+        getRadius: 25,
+        getLineWidth: 5,
+        getLineColor: [165, 243, 252, 255], // #A5F3FC
+      }));
+
+      // Inner ring layer (r=16, for semanticOnly and bothPipelines)
+      layerList.push(new ScatterplotLayer({
+        id: 'incident-rings-inner',
+        data: filteredIncidents.filter(d => {
+          const p = getProvenance(d);
+          return p === 'semantic' || p === 'both';
+        }),
+        pickable: false,
+        opacity: 1,
+        stroked: true,
+        filled: false,
+        radiusUnits: 'pixels',
+        lineWidthUnits: 'pixels',
+        getPosition: d => [d.lng, d.lat],
+        getRadius: 16,
+        getLineWidth: 7,
+        getLineColor: [34, 211, 238, 255], // #22D3EE
+      }));
+    }
+
+    // Main dot layer (category fill, provenance-based radius)
+    layerList.push(new ScatterplotLayer({
       id: 'incidents',
       data: filteredIncidents,
       pickable: true,
-      opacity: 0.8,
       stroked: false,
       filled: true,
-      radiusScale: 1,
-      radiusMinPixels: 4,
-      radiusMaxPixels: 20,
+      radiusUnits: 'pixels',
       getPosition: d => [d.lng, d.lat],
       getRadius: d => {
-        const weight = { p1: 5, p2: 4, p3: 2, p4: 1 }[d.serviceIssue?.severity] || 1;
-        return weight * 2;
+        const provenance = getProvenance(d);
+        if (!provenance) return 7; // notMatched
+        return 11; // all matched incidents
       },
       getFillColor: d => {
-        const provenance = searchResults?.provenance?.[d._id];
-        if (provenance) return getProvenanceColorRGBA(provenance);
-        return CATEGORY_COLORS_RGBA[d.serviceIssue?.category] || [90, 102, 114, 200];
+        const provenance = getProvenance(d);
+        const baseColor = CATEGORY_COLORS_RGBA[d.serviceIssue?.category] || [90, 102, 114, 200];
+        if (!provenance) {
+          // notMatched: 25% opacity
+          return [baseColor[0], baseColor[1], baseColor[2], 64];
+        }
+        return baseColor;
       },
-      updateTriggers: { getFillColor: [searchResults?.provenance] },
-    });
-    return [layer];
-  }, [filteredIncidents, searchResults]);
+      updateTriggers: {
+        getRadius: [searchResults?.provenance],
+        getFillColor: [searchResults?.provenance],
+      },
+    }));
+
+    return layerList;
+  }, [filteredIncidents, searchResults, searchMode, compareMode]);
 
   const handleIncidentClick = useCallback((info) => {
     if (info.object) navigate(`/incident/${info.object._id}`);
@@ -401,8 +451,8 @@ export default function SearchShell() {
               {/* Three Pipeline Panes */}
               <div className="compare-panes">
                 {/* LEXICAL Pane */}
-                <div className="compare-pane">
-                  <div className="compare-pane__header">LEXICAL</div>
+                <div className="compare-pane compare-pane--lexical">
+                  <div className="compare-pane__header" style={{ color: MODE_COLOR.lexical }}>LEXICAL</div>
                   <div className="compare-pane__code">
                     <div className="compare-pane__code-line">Search: <span className="code-key">text_operator</span></div>
                     <pre className="compare-pane__pre">{`{
@@ -422,7 +472,7 @@ export default function SearchShell() {
                     <span className="compare-pane__meta-value">100</span>
                   </div>
                   <div className="compare-pane__count">
-                    <span className="compare-pane__count-num">19</span>
+                    <span className="compare-pane__count-num" style={{ color: MODE_COLOR.lexical }}>19</span>
                     <span className="compare-pane__count-label">of 323</span>
                   </div>
                   <div className="compare-pane__results">
@@ -440,8 +490,8 @@ export default function SearchShell() {
                 </div>
 
                 {/* SEMANTIC Pane */}
-                <div className="compare-pane">
-                  <div className="compare-pane__header">SEMANTIC</div>
+                <div className="compare-pane compare-pane--semantic">
+                  <div className="compare-pane__header" style={{ color: MODE_COLOR.semantic }}>SEMANTIC</div>
                   <div className="compare-pane__code">
                     <div className="compare-pane__code-line">$vectorSearch: <span className="code-key">voyage-4</span></div>
                     <pre className="compare-pane__pre">{`{
@@ -459,7 +509,7 @@ export default function SearchShell() {
                     <span className="compare-pane__meta-value">100</span>
                   </div>
                   <div className="compare-pane__count">
-                    <span className="compare-pane__count-num">19</span>
+                    <span className="compare-pane__count-num" style={{ color: MODE_COLOR.semantic }}>19</span>
                     <span className="compare-pane__count-label">of 323</span>
                   </div>
                   <div className="compare-pane__results">
@@ -478,7 +528,7 @@ export default function SearchShell() {
 
                 {/* HYBRID Pane */}
                 <div className="compare-pane compare-pane--highlight">
-                  <div className="compare-pane__header">HYBRID</div>
+                  <div className="compare-pane__header" style={{ color: MODE_COLOR.hybrid }}>HYBRID</div>
                   <div className="compare-pane__code">
                     <div className="compare-pane__code-line">$rankFusion: <span className="code-key">weights</span></div>
                     <pre className="compare-pane__pre">{`{
@@ -495,7 +545,7 @@ export default function SearchShell() {
                     <span className="compare-pane__meta-value">2</span>
                   </div>
                   <div className="compare-pane__count compare-pane__count--highlight">
-                    <span className="compare-pane__count-num">21</span>
+                    <span className="compare-pane__count-num" style={{ color: MODE_COLOR.hybrid }}>21</span>
                     <span className="compare-pane__count-label">of 323</span>
                   </div>
                   <div className="compare-pane__subtitle">
@@ -639,7 +689,7 @@ export default function SearchShell() {
                     ))}
                   </svg>
                   <div className="umap-panel__legend">
-                    <div className="umap-panel__legend-cat" style={{ color: '#00ED64' }}>Consumer</div>
+                    <div className="umap-panel__legend-cat" style={{ color: CATEGORY_COLORS.consumer }}>Consumer</div>
                     <div className="umap-panel__legend-row">
                       Fiber <strong>{categoryTypeCounts.consumer?.fiber || 7}</strong> · broadband <strong>{categoryTypeCounts.consumer?.broadband || 5}</strong>
                     </div>
@@ -763,7 +813,7 @@ export default function SearchShell() {
                     <circle
                       cx="50" cy="50" r="42"
                       fill="none"
-                      stroke="#22D3EE"
+                      stroke={MODE_COLOR.hybrid}
                       strokeWidth="8"
                       strokeDasharray="52 212"
                       strokeDashoffset="0"
@@ -772,7 +822,7 @@ export default function SearchShell() {
                     <circle
                       cx="50" cy="50" r="42"
                       fill="none"
-                      stroke="#00ED64"
+                      stroke={MODE_COLOR.semantic}
                       strokeWidth="8"
                       strokeDasharray="98 166"
                       strokeDashoffset="-52"
@@ -781,7 +831,7 @@ export default function SearchShell() {
                     <circle
                       cx="50" cy="50" r="42"
                       fill="none"
-                      stroke="#94A3B8"
+                      stroke={MODE_COLOR.lexical}
                       strokeWidth="8"
                       strokeDasharray="26 238"
                       strokeDashoffset="-150"
@@ -791,29 +841,29 @@ export default function SearchShell() {
                     <text x="50" y="46" textAnchor="middle" fill="#E8EDF2" fontSize="18" fontWeight="600">
                       {resultsSummary.hybridCount}
                     </text>
-                    <text x="50" y="60" textAnchor="middle" fill="#00ED64" fontSize="10">
+                    <text x="50" y="60" textAnchor="middle" fill={MODE_COLOR.semantic} fontSize="10">
                       +{resultsSummary.semanticCount}
                     </text>
                   </svg>
                 </div>
                 <div className="result-composition__legend">
                   <div className="result-composition__item">
-                    <span className="result-composition__dot" style={{ background: '#22D3EE' }} />
+                    <span className="result-composition__dot" style={{ background: MODE_COLOR.hybrid }} />
                     <span>anchor</span>
                     <span className="result-composition__desc">counted in "both"</span>
                   </div>
                   <div className="result-composition__item">
-                    <span className="result-composition__dot" style={{ background: '#00ED64' }} />
+                    <span className="result-composition__dot" style={{ background: MODE_COLOR.semantic }} />
                     <span>semantic only</span>
                     <span className="result-composition__value">{resultsSummary.semanticCount}</span>
                   </div>
                   <div className="result-composition__item">
-                    <span className="result-composition__dot" style={{ background: '#94A3B8' }} />
+                    <span className="result-composition__dot" style={{ background: MODE_COLOR.lexical }} />
                     <span>lexical only</span>
                     <span className="result-composition__value">{resultsSummary.lexical || 2}</span>
                   </div>
                   <div className="result-composition__item">
-                    <span className="result-composition__dot" style={{ background: '#FBBF24' }} />
+                    <span className="result-composition__dot" style={{ background: MODE_COLOR.hybrid }} />
                     <span>both</span>
                     <span className="result-composition__value">{resultsSummary.both || 4}</span>
                   </div>

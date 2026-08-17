@@ -6,11 +6,12 @@
  */
 
 import React, { useMemo } from 'react';
+import { MODE_COLOR } from '../../utils/colors';
 
 const PROVENANCE_COLORS = {
-  both: '#22D3EE',     // hybrid/anchor
-  semantic: '#00ED64', // semantic only
-  lexical: '#94A3B8',  // lexical only
+  both: MODE_COLOR.hybrid,     // hybrid/anchor
+  semantic: MODE_COLOR.semantic, // semantic only
+  lexical: MODE_COLOR.lexical,  // lexical only
 };
 
 export default function ResultDonut({

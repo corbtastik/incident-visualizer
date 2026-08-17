@@ -17,17 +17,17 @@
   --text-muted: #5A6672;
   --mdb-green: #00ED64;
 
-  /* Category colors */
-  --cat-business: #4F8FFF;
-  --cat-consumer: #00ED64;
-  --cat-emerging-tech: #A78BFA;
+  /* Category colors (updated to avoid cyan collision) */
+  --cat-business: #818CF8;
+  --cat-consumer: #4ADE80;
+  --cat-emerging-tech: #C084FC;
   --cat-federal: #F472B6;
   --cat-infrastructure: #FBBF24;
 
-  /* State colors (retrieval provenance) */
-  --state-lexical: #94A3B8;
-  --state-semantic: #00ED64;
-  --state-hybrid: #22D3EE;
+  /* Search mode colors (unified cyan ramp) */
+  --state-lexical: #0E9BC4;
+  --state-semantic: #22D3EE;
+  --state-hybrid: #A5F3FC;
   --state-novel: #FF6B4A;
   --state-systemic: #FF3B6B;
 
@@ -1753,7 +1753,7 @@ body {
 
 .relevance-slider__fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--state-lexical), var(--mdb-green));
+  background: linear-gradient(90deg, var(--state-lexical), var(--state-semantic));
   border-radius: 2px;
 }
 

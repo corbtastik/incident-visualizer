@@ -14,7 +14,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useMockData } from '../hooks/useMockData';
-import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor } from '../utils/colors';
+import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, getCategoryFromType } from '../utils/colors';
 import { MAP_CONFIG } from '../utils/constants';
 import { formatDate, formatScore, formatCurrency, formatDuration } from '../utils/formatters';
 import VideoPreview from '../components/media/VideoPreview';
@@ -482,7 +482,7 @@ export default function DetailShell() {
             <div key={n.id} className="detail-context__neighbour">
               <span
                 className="detail-context__neighbour-dot"
-                style={{ backgroundColor: n.type === 'construction' || n.type === 'backhaul' ? '#FBBF24' : '#00ED64' }}
+                style={{ backgroundColor: CATEGORY_COLORS[getCategoryFromType(n.type)] }}
               />
               <span className="detail-context__neighbour-id">{n.id}</span>
               <span className="detail-context__neighbour-type">{n.type}</span>

@@ -1,12 +1,13 @@
 import { ScatterplotLayer } from "@deck.gl/layers";
 
 // Exported so the Control Panel can use the same palette.
+// Must match CATEGORY_COLORS_RGBA in utils/colors.js
 export const CAT_COLOR = {
-  business:       [66, 153, 225, 200],  // blue
-  consumer:       [16, 185, 129, 200],  // teal/green
-  emerging_tech:  [168, 85, 247, 200],  // purple
-  federal:        [244, 114, 182, 200], // pink
-  infrastructure: [250, 204, 21, 200],  // yellow
+  business:       [129, 140, 248, 200],  // #818CF8
+  consumer:       [74, 222, 128, 200],   // #4ADE80
+  emerging_tech:  [192, 132, 252, 200],  // #C084FC
+  federal:        [244, 114, 182, 200],  // #F472B6
+  infrastructure: [251, 191, 36, 200],   // #FBBF24
 };
 
 // Normalize both UI values and doc values
