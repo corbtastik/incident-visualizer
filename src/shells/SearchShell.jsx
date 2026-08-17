@@ -283,23 +283,31 @@ export default function SearchShell() {
           {/* Relevance Blend */}
           <div className="search-rail__section">
             <div className="search-rail__label">RELEVANCE BLEND</div>
-            <div className="relevance-slider">
-              <div className="relevance-slider__labels">
-                <span>Exact</span>
-                <span className="relevance-slider__values">
-                  lexical {(1 - relevanceBlend).toFixed(2)} · semantic {relevanceBlend.toFixed(2)}
-                </span>
-                <span>Conceptual</span>
+            <div className="relevance-blend">
+              <div className="relevance-blend__track-labels">
+                <span className="relevance-blend__label">Exact</span>
+                <span className="relevance-blend__label">Conceptual</span>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={relevanceBlend}
-                onChange={(e) => setRelevanceBlend(parseFloat(e.target.value))}
-                className="relevance-slider__input"
-              />
+              <div className="relevance-blend__slider-container">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={relevanceBlend}
+                  onChange={(e) => setRelevanceBlend(parseFloat(e.target.value))}
+                  className="relevance-blend__slider"
+                />
+              </div>
+              <div className="relevance-blend__values">
+                <span className="relevance-blend__value">
+                  lexical <span className="relevance-blend__num">{(1 - relevanceBlend).toFixed(2)}</span>
+                </span>
+                <span className="relevance-blend__dot">·</span>
+                <span className="relevance-blend__value">
+                  semantic <span className="relevance-blend__num">{relevanceBlend.toFixed(2)}</span>
+                </span>
+              </div>
             </div>
           </div>
 

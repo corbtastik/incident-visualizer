@@ -17,6 +17,56 @@ import { useMockData } from '../hooks/useMockData';
 import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor } from '../utils/colors';
 import { MAP_CONFIG } from '../utils/constants';
 import { formatDate, formatScore, formatCurrency, formatDuration } from '../utils/formatters';
+import VideoPreview from '../components/media/VideoPreview';
+import VideoPlayer from '../components/media/VideoPlayer';
+import ImagePreview from '../components/media/ImagePreview';
+import ImageViewer from '../components/media/ImageViewer';
+import DocumentPreview from '../components/media/DocumentPreview';
+import DocumentViewer from '../components/media/DocumentViewer';
+
+// Sample documents for testing (public domain PDFs)
+const SAMPLE_DOCUMENTS = [
+  {
+    id: 'splice-map',
+    documentSrc: 'https://www.africau.edu/images/default/sample.pdf',
+    caption: 'splice map a5-bull, page 14',
+    score: '0.83'
+  }
+];
+
+// Sample images for testing
+const SAMPLE_IMAGES = [
+  {
+    id: 'pedestal',
+    imageSrc: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop',
+    caption: 'open pedestal, severed cable visible',
+    score: '0.88'
+  },
+  {
+    id: 'damage-site',
+    imageSrc: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&h=600&fit=crop',
+    caption: 'excavation damage near conduit',
+    score: '0.82'
+  }
+];
+
+// Sample videos for testing (public domain)
+const SAMPLE_VIDEOS = [
+  {
+    id: 'drone-pass',
+    videoSrc: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4',
+    thumbnailSrc: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400&h=200&fit=crop',
+    caption: 'drone pass',
+    score: '0.76'
+  },
+  {
+    id: 'site-survey',
+    videoSrc: 'https://test-videos.co.uk/vids/jellyfish/mp4/h264/720/Jellyfish_720_10s_1MB.mp4',
+    thumbnailSrc: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=400&h=200&fit=crop',
+    caption: 'site survey footage',
+    score: '0.71'
+  }
+];
 
 export default function DetailShell() {
   const { id } = useParams();
@@ -44,6 +94,11 @@ export default function DetailShell() {
   // Tab state
   const [activeTab, setActiveTab] = useState('overview');
   const [activeEvidenceTab, setActiveEvidenceTab] = useState('map');
+
+  // Media viewer state
+  const [activeVideo, setActiveVideo] = useState(null);
+  const [activeImage, setActiveImage] = useState(null);
+  const [activeDocument, setActiveDocument] = useState(null);
 
   // Map view state
   const [viewState, setViewState] = useState(() => {
@@ -472,58 +527,38 @@ export default function DetailShell() {
           <div className="detail-context__section-title">MEDIA</div>
 
           <div className="detail-context__media-grid">
-            {/* Image */}
-            <div className="detail-context__media-item">
-              <div className="detail-context__media-title">IMAGE</div>
-              <div className="detail-context__media-preview">
-                <img
-                  src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=200&fit=crop"
-                  alt="Open pedestal"
-                  className="detail-context__media-img"
-                />
-              </div>
-              <div className="detail-context__media-info">
-                <span className="detail-context__media-caption">open pedestal, severed cable visible</span>
-                <span className="detail-context__media-score">0.88</span>
-              </div>
-            </div>
+            {/* Images - with click to expand */}
+            {SAMPLE_IMAGES.map((image) => (
+              <ImagePreview
+                key={image.id}
+                imageSrc={image.imageSrc}
+                caption={image.caption}
+                score={image.score}
+                onExpand={() => setActiveImage(image)}
+              />
+            ))}
 
-            {/* Document */}
-            <div className="detail-context__media-item">
-              <div className="detail-context__media-title">DOCUMENT</div>
-              <div className="detail-context__media-preview detail-context__media-preview--doc">
-                <svg viewBox="0 0 200 100" className="detail-context__media-doc-svg">
-                  <rect x="10" y="10" width="180" height="80" fill="#1B2127" stroke="#232A31" strokeWidth="1" />
-                  <line x1="25" y1="25" x2="175" y2="25" stroke="#3a4049" strokeWidth="2" />
-                  <line x1="25" y1="40" x2="155" y2="40" stroke="#3a4049" strokeWidth="2" />
-                  <line x1="25" y1="55" x2="165" y2="55" stroke="#3a4049" strokeWidth="2" />
-                  <line x1="25" y1="70" x2="120" y2="70" stroke="#3a4049" strokeWidth="2" />
-                  <rect x="130" y="60" width="50" height="22" fill="#232A31" stroke="#00ED64" strokeWidth="1" />
-                  <text x="155" y="75" fill="#00ED64" fontSize="10" textAnchor="middle">MAP</text>
-                </svg>
-              </div>
-              <div className="detail-context__media-info">
-                <span className="detail-context__media-caption">splice map a5-bull, page 14</span>
-                <span className="detail-context__media-score">0.83</span>
-              </div>
-            </div>
+            {/* Documents - with click to expand */}
+            {SAMPLE_DOCUMENTS.map((doc) => (
+              <DocumentPreview
+                key={doc.id}
+                caption={doc.caption}
+                score={doc.score}
+                onExpand={() => setActiveDocument(doc)}
+              />
+            ))}
 
-            {/* Video */}
-            <div className="detail-context__media-item">
-              <div className="detail-context__media-title">VIDEO</div>
-              <div className="detail-context__media-preview">
-                <img
-                  src="https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400&h=200&fit=crop"
-                  alt="Drone view"
-                  className="detail-context__media-img"
-                />
-                <div className="detail-context__media-play">▶</div>
-              </div>
-              <div className="detail-context__media-info">
-                <span className="detail-context__media-caption">drone pass</span>
-                <span className="detail-context__media-score">0.76</span>
-              </div>
-            </div>
+            {/* Videos - with hover preview and click to expand */}
+            {SAMPLE_VIDEOS.map((video) => (
+              <VideoPreview
+                key={video.id}
+                videoSrc={video.videoSrc}
+                thumbnailSrc={video.thumbnailSrc}
+                caption={video.caption}
+                score={video.score}
+                onExpand={() => setActiveVideo(video)}
+              />
+            ))}
           </div>
 
           <div className="detail-context__media-footer">
@@ -531,6 +566,35 @@ export default function DetailShell() {
           </div>
         </div>
       </aside>
+
+      {/* Video Player Modal */}
+      {activeVideo && (
+        <VideoPlayer
+          videoSrc={activeVideo.videoSrc}
+          caption={activeVideo.caption}
+          onClose={() => setActiveVideo(null)}
+        />
+      )}
+
+      {/* Image Viewer Modal */}
+      {activeImage && (
+        <ImageViewer
+          imageSrc={activeImage.imageSrc}
+          caption={activeImage.caption}
+          score={activeImage.score}
+          onClose={() => setActiveImage(null)}
+        />
+      )}
+
+      {/* Document Viewer Modal */}
+      {activeDocument && (
+        <DocumentViewer
+          documentSrc={activeDocument.documentSrc}
+          caption={activeDocument.caption}
+          score={activeDocument.score}
+          onClose={() => setActiveDocument(null)}
+        />
+      )}
     </div>
   );
 }
