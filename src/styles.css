@@ -349,16 +349,16 @@ body {
   font-family: 'JetBrains Mono', monospace;
   font-size: 20px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--state-lexical);
 }
 
 .results-banner__stat--highlight .results-banner__value {
-  color: var(--mdb-green);
+  color: var(--state-semantic);
 }
 
 .results-banner__stat--primary .results-banner__value {
   font-size: 28px;
-  color: var(--text-primary);
+  color: var(--state-hybrid);
 }
 
 .results-banner__recall {
@@ -415,7 +415,7 @@ body {
 .results-banner__card-score {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--mdb-green);
+  color: var(--state-hybrid);
 }
 
 .results-banner__card-ticket {

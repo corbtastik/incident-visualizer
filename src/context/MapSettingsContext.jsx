@@ -11,7 +11,7 @@ const MapSettingsContext = createContext(null);
 
 const STORAGE_KEY = 'mapSettings';
 const DEFAULT_DOT_SIZE = 11;
-const MIN_DOT_SIZE = 4;
+const MIN_DOT_SIZE = 2;
 const MAX_DOT_SIZE = 24;
 
 export function MapSettingsProvider({ children }) {
