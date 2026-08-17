@@ -3396,25 +3396,18 @@ body {
   margin-bottom: 12px;
 }
 
-/* Severity Pills */
+/* Severity Badge (read-only on detail view) */
 .detail-rail__severity {
   display: flex;
-  gap: 6px;
   margin-bottom: 10px;
 }
 
-.detail-rail__sev-pill {
-  padding: 4px 10px;
-  border: 1px solid var(--border);
+.detail-rail__sev-badge {
+  padding: 4px 12px;
+  border: 1px solid var(--text-secondary);
   border-radius: 4px;
   font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: transparent;
-}
-
-.detail-rail__sev-pill--active {
-  border-color: var(--text-secondary);
+  font-weight: 600;
   color: var(--text-primary);
   background: var(--elevated);
 }

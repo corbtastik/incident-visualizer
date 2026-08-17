@@ -15,7 +15,7 @@
  * - Provenance values: lexicalOnly, semanticOnly, bothPipelines
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DeckGL from '@deck.gl/react';
 import { Map } from 'react-map-gl/maplibre';
@@ -30,6 +30,9 @@ import { ScatterplotLayer } from '@deck.gl/layers';
 
 // Number of feed cards to render
 const FEED_CARD_COUNT = 3;
+
+// Live feed counter interval (ms)
+const FEED_TICK_INTERVAL = 2500;
 
 export default function SearchShell() {
   const navigate = useNavigate();
@@ -59,6 +62,15 @@ export default function SearchShell() {
   // Map state
   const [hoverInfo, setHoverInfo] = useState(null);
   const [viewState, setViewState] = useState(MAP_CONFIG.initialViewState);
+
+  // Rolling live feed counter - independent of search mode
+  const [feedEventCount, setFeedEventCount] = useState(323);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFeedEventCount(prev => prev + 1);
+    }, FEED_TICK_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
 
   // Counts from fixture (source of truth)
   const counts = searchResults?.counts || {};
@@ -213,8 +225,9 @@ export default function SearchShell() {
   }, [incidents]);
 
   // All UMAP points (full corpus, 323 points)
+  // Sorted: unmatched first, then matched (so matched render on top in SVG)
   const allUmapPoints = useMemo(() => {
-    return incidents
+    const points = incidents
       .filter(inc => {
         const ticketRef = inc.serviceIssue?.ticketRef;
         return ticketRef && umapCoords?.[ticketRef];
@@ -232,7 +245,26 @@ export default function SearchShell() {
           provenance,
         };
       });
+    // Sort: unmatched (null provenance) first, matched last (renders on top)
+    return points.sort((a, b) => {
+      if (!a.provenance && b.provenance) return -1;
+      if (a.provenance && !b.provenance) return 1;
+      return 0;
+    });
   }, [incidents, umapCoords, provenanceByTicketRef]);
+
+  // UMAP extent - compute actual x/y range for proper scaling
+  const umapExtent = useMemo(() => {
+    if (allUmapPoints.length === 0) return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+    const xs = allUmapPoints.map(p => p.x);
+    const ys = allUmapPoints.map(p => p.y);
+    return {
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minY: Math.min(...ys),
+      maxY: Math.max(...ys),
+    };
+  }, [allUmapPoints]);
 
   // Category type counts for UMAP legend
   const categoryTypeCounts = useMemo(() => {
@@ -277,11 +309,14 @@ export default function SearchShell() {
     }).filter(Boolean);
   }, [modeResults.lexical, incidents]);
 
+  // Semantic pane in compare mode: only semanticOnly results (not bothPipelines)
   const semanticResults = useMemo(() => {
-    return modeResults.semantic.map(r => {
-      const inc = incidents.find(i => i.serviceIssue?.ticketRef === r.ticketRef);
-      return inc ? { ...inc, _result: r } : null;
-    }).filter(Boolean);
+    return modeResults.semantic
+      .filter(r => r.provenance === 'semanticOnly')
+      .map(r => {
+        const inc = incidents.find(i => i.serviceIssue?.ticketRef === r.ticketRef);
+        return inc ? { ...inc, _result: r } : null;
+      }).filter(Boolean);
   }, [modeResults.semantic, incidents]);
 
   const hybridResults = useMemo(() => {
@@ -733,17 +768,23 @@ export default function SearchShell() {
                     </defs>
                     <rect width="400" height="100" fill="url(#umap-grid)" />
 
-                    {/* All corpus points - matched ones highlighted */}
-                    {allUmapPoints.map((pt) => (
-                      <circle
-                        key={pt.ticketRef}
-                        cx={20 + pt.x * 360}
-                        cy={10 + pt.y * 80}
-                        r={pt.provenance ? 4 : 2}
-                        fill={getCategoryColor(pt.category)}
-                        opacity={pt.provenance ? 0.9 : 0.25}
-                      />
-                    ))}
+                    {/* All corpus points - matched ones highlighted, scaled to actual data range */}
+                    {allUmapPoints.map((pt) => {
+                      const rangeX = umapExtent.maxX - umapExtent.minX || 1;
+                      const rangeY = umapExtent.maxY - umapExtent.minY || 1;
+                      const normX = (pt.x - umapExtent.minX) / rangeX;
+                      const normY = (pt.y - umapExtent.minY) / rangeY;
+                      return (
+                        <circle
+                          key={pt.ticketRef}
+                          cx={20 + normX * 360}
+                          cy={10 + normY * 80}
+                          r={pt.provenance ? 4 : 2}
+                          fill={getCategoryColor(pt.category)}
+                          opacity={pt.provenance ? 0.9 : 0.25}
+                        />
+                      );
+                    })}
                   </svg>
                   <div className="umap-panel__legend">
                     <div className="umap-panel__legend-cat" style={{ color: CATEGORY_COLORS.consumer }}>Consumer</div>
@@ -767,7 +808,7 @@ export default function SearchShell() {
         <aside className="feeds-rail">
           <div className="feeds-rail__header">
             <span className="feeds-rail__title">LIVE FEEDS</span>
-            <span className="feeds-rail__count">{feedIncidents.length} events</span>
+            <span className="feeds-rail__count">{feedEventCount} events</span>
           </div>
 
           {/* Systemic Event */}

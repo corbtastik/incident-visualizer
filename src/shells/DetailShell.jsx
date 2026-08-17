@@ -399,16 +399,11 @@ export default function DetailShell() {
             {incident.serviceIssue?.ticketRef} · {incident.city}, {incident.state} · {formatDate(incident.ts)}
           </div>
 
-          {/* Severity Pills */}
+          {/* Severity Badge - read-only, shows this incident's severity */}
           <div className="detail-rail__severity">
-            {['p1', 'p2', 'p3', 'p4'].map(sev => (
-              <span
-                key={sev}
-                className={`detail-rail__sev-pill ${incident.serviceIssue?.severity === sev ? 'detail-rail__sev-pill--active' : ''}`}
-              >
-                {sev.toUpperCase()}
-              </span>
-            ))}
+            <span className="detail-rail__sev-badge">
+              {(incident.serviceIssue?.severity || 'p2').toUpperCase()}
+            </span>
           </div>
 
           {/* Result Position */}
@@ -657,41 +652,66 @@ export default function DetailShell() {
             <button className="detail-context__show-map">Show on map</button>
           </div>
 
-          {/* Predicted Dispatch */}
+          {/* Predicted Dispatch - computed from neighbours[ticketRef] */}
           <div className="detail-context__section">
             <div className="detail-context__section-title">PREDICTED DISPATCH</div>
             <div className="detail-context__dispatch">
               {(() => {
-                // Compute predicted dispatch from neighbours
-                const crews = incidentNeighbours.map(n => n.resolution?.crew).filter(Boolean);
-                const mostCommonCrew = crews.length ? crews.sort((a, b) =>
-                  crews.filter(v => v === a).length - crews.filter(v => v === b).length
-                ).pop() : 'splice';
+                const k = incidentNeighbours.length;
+                if (k === 0) return <div className="detail-context__dispatch-note">No neighbours found</div>;
+
+                // Modal crew (most common)
+                const crewCounts = {};
+                incidentNeighbours.forEach(n => {
+                  const crew = n.resolution?.crew;
+                  if (crew) crewCounts[crew] = (crewCounts[crew] || 0) + 1;
+                });
+                const modalCrew = Object.entries(crewCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'unknown';
+                const modalCrewCount = crewCounts[modalCrew] || 0;
+                const agreement = (modalCrewCount / k).toFixed(2);
+
+                // Techs: rounded mean of all neighbours
                 const techs = incidentNeighbours.map(n => n.resolution?.techs).filter(t => t != null);
-                const avgTechs = techs.length ? Math.round(techs.reduce((a, b) => a + b, 0) / techs.length) : 2;
+                const avgTechs = techs.length ? Math.round(techs.reduce((a, b) => a + b, 0) / techs.length) : null;
+
+                // Hours: mean with min-max range (exclude nulls)
                 const hours = incidentNeighbours.map(n => n.resolution?.hours).filter(h => h != null);
                 const avgHours = hours.length ? (hours.reduce((a, b) => a + b, 0) / hours.length).toFixed(1) : null;
+                const minHours = hours.length ? Math.min(...hours).toFixed(1) : null;
+                const maxHours = hours.length ? Math.max(...hours).toFixed(1) : null;
+
+                // Parts: union from neighbours whose crew === modal crew
+                const partsFromModalCrew = incidentNeighbours
+                  .filter(n => n.resolution?.crew === modalCrew)
+                  .flatMap(n => n.resolution?.parts || []);
+                const uniqueParts = [...new Set(partsFromModalCrew)];
+
+                // Cost: mean ± half the spread (exclude nulls)
                 const costs = incidentNeighbours.map(n => n.resolution?.costUsd).filter(c => c != null);
                 const avgCost = costs.length ? Math.round(costs.reduce((a, b) => a + b, 0) / costs.length) : null;
-                const parts = [...new Set(incidentNeighbours.flatMap(n => n.resolution?.parts || []))].slice(0, 3);
+                const minCost = costs.length ? Math.min(...costs) : null;
+                const maxCost = costs.length ? Math.max(...costs) : null;
+                const costSpread = (minCost != null && maxCost != null) ? Math.round((maxCost - minCost) / 2) : null;
 
                 return (
                   <>
                     <div className="detail-context__dispatch-main">
-                      {mostCommonCrew} crew · {avgTechs} techs{avgHours ? ` · ${avgHours}h` : ''} · 1 truck roll
+                      {modalCrew} crew{avgTechs ? ` · ${avgTechs} techs` : ''}
+                      {avgHours ? ` · ${avgHours}h (${minHours}–${maxHours})` : ''} · 1 truck roll
                     </div>
-                    {parts.length > 0 && (
+                    {uniqueParts.length > 0 && (
                       <div className="detail-context__dispatch-params">
-                        Parts: {parts.join(', ')}
+                        Parts: {uniqueParts.join(', ')}
                       </div>
                     )}
                     {avgCost && (
                       <div className="detail-context__dispatch-cost">
                         Est. cost <span className="detail-context__dispatch-amount">${avgCost.toLocaleString()}</span>
+                        {costSpread ? <span className="detail-context__dispatch-range"> (±${costSpread.toLocaleString()})</span> : null}
                       </div>
                     )}
                     <div className="detail-context__dispatch-note">
-                      k={incidentNeighbours.length} agreement · retrieval, not a trained model
+                      k={k} · agreement {agreement} · retrieval, not a trained model
                     </div>
                   </>
                 );
