@@ -7,6 +7,12 @@
  * - Left rail (300px) with filters
  * - Center (map + UMAP)
  * - Right rail (380px) with live feeds + donut
+ *
+ * Data wiring:
+ * - All counts from searchResults.counts
+ * - Results from searchResults.modes[mode].results
+ * - Join key is ticketRef (not _id)
+ * - Provenance values: lexicalOnly, semanticOnly, bothPipelines
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -18,13 +24,16 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useMockData } from '../hooks/useMockData';
 import { useMapSettings } from '../context/MapSettingsContext';
-import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, MODE_COLOR, PIN, getPinConfig } from '../utils/colors';
-import { MAP_CONFIG, SEARCH_MODES, CATEGORIES } from '../utils/constants';
+import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, MODE_COLOR } from '../utils/colors';
+import { MAP_CONFIG, CATEGORIES } from '../utils/constants';
 import { ScatterplotLayer } from '@deck.gl/layers';
+
+// Number of feed cards to render
+const FEED_CARD_COUNT = 3;
 
 export default function SearchShell() {
   const navigate = useNavigate();
-  const { incidents, clusters, searchResults, umapCoords, loading } = useMockData();
+  const { incidents, clusters, searchResults, umapCoords, loading, resultsByTicketRef } = useMockData();
   const { dotSize } = useMapSettings();
 
   // Get detected cluster (if any)
@@ -32,7 +41,7 @@ export default function SearchShell() {
 
   // Search state
   const [searchMode, setSearchMode] = useState('hybrid');
-  const [searchQuery, setSearchQuery] = useState('backhoe damage near SE-MCA-2211');
+  const [searchQuery] = useState(searchResults?.query || 'backhoe damage near SE-MCA-2211');
   const [relevanceBlend, setRelevanceBlend] = useState(0.62);
   const [compareMode, setCompareMode] = useState(false);
 
@@ -51,25 +60,68 @@ export default function SearchShell() {
   const [hoverInfo, setHoverInfo] = useState(null);
   const [viewState, setViewState] = useState(MAP_CONFIG.initialViewState);
 
-  // Get filtered results
-  const filteredIncidents = useMemo(() => {
-    if (!searchResults) return incidents;
-    const resultIds = new Set(searchResults[searchMode]?.results || []);
-    return incidents.filter(inc => {
-      if (resultIds.size > 0 && !resultIds.has(inc._id)) return false;
+  // Counts from fixture (source of truth)
+  const counts = searchResults?.counts || {};
+  const corpusTotal = searchResults?.corpusTotal || 323;
+
+  // Get mode results - each mode has its own results array
+  const modeResults = useMemo(() => {
+    const modes = searchResults?.modes || {};
+    return {
+      lexical: modes.lexical?.results || [],
+      semantic: modes.semantic?.results || [],
+      hybrid: modes.hybrid?.results || [],
+    };
+  }, [searchResults]);
+
+  // Build provenance lookup from hybrid results (the superset)
+  const provenanceByTicketRef = useMemo(() => {
+    const map = {};
+    modeResults.hybrid.forEach(r => {
+      map[r.ticketRef] = r.provenance;
+    });
+    return map;
+  }, [modeResults]);
+
+  // Get current mode's results as incident objects
+  const currentModeResults = useMemo(() => {
+    const resultList = modeResults[searchMode] || [];
+    return resultList.map(r => {
+      const inc = incidents.find(i => i.serviceIssue?.ticketRef === r.ticketRef);
+      return inc ? { ...inc, _result: r } : null;
+    }).filter(Boolean);
+  }, [modeResults, searchMode, incidents]);
+
+  // Apply category/severity filters to current mode results
+  const filteredResults = useMemo(() => {
+    return currentModeResults.filter(inc => {
       if (!categories[inc.serviceIssue?.category]) return false;
       if (!severities.includes(inc.serviceIssue?.severity)) return false;
       return true;
     });
-  }, [incidents, searchResults, searchMode, categories, severities]);
+  }, [currentModeResults, categories, severities]);
+
+  // All incidents for map (full corpus), with provenance info
+  const allIncidentsWithProvenance = useMemo(() => {
+    return incidents.map(inc => ({
+      ...inc,
+      provenance: provenanceByTicketRef[inc.serviceIssue?.ticketRef] || null,
+    }));
+  }, [incidents, provenanceByTicketRef]);
+
+  // Filtered for map display (by category/severity, but show all corpus)
+  const mapIncidents = useMemo(() => {
+    return allIncidentsWithProvenance.filter(inc => {
+      if (!categories[inc.serviceIssue?.category]) return false;
+      if (!severities.includes(inc.serviceIssue?.severity)) return false;
+      return true;
+    });
+  }, [allIncidentsWithProvenance, categories, severities]);
 
   // Create map layers with provenance-based rings
   const layers = useMemo(() => {
     const showRings = searchMode === 'hybrid' || compareMode;
     const layerList = [];
-
-    // Helper to get provenance for an incident
-    const getProvenance = (d) => searchResults?.provenance?.[d._id] || null;
 
     // Scale factors relative to base dotSize
     const notMatchedSize = dotSize * 0.64;
@@ -82,7 +134,7 @@ export default function SearchShell() {
     if (showRings) {
       layerList.push(new ScatterplotLayer({
         id: 'incident-rings-outer',
-        data: filteredIncidents.filter(d => getProvenance(d) === 'both'),
+        data: mapIncidents.filter(d => d.provenance === 'bothPipelines'),
         pickable: false,
         opacity: 1,
         stroked: true,
@@ -98,10 +150,9 @@ export default function SearchShell() {
       // Inner ring layer (for semanticOnly and bothPipelines)
       layerList.push(new ScatterplotLayer({
         id: 'incident-rings-inner',
-        data: filteredIncidents.filter(d => {
-          const p = getProvenance(d);
-          return p === 'semantic' || p === 'both';
-        }),
+        data: mapIncidents.filter(d =>
+          d.provenance === 'semanticOnly' || d.provenance === 'bothPipelines'
+        ),
         pickable: false,
         opacity: 1,
         stroked: true,
@@ -118,103 +169,130 @@ export default function SearchShell() {
     // Main dot layer (category fill, provenance-based radius)
     layerList.push(new ScatterplotLayer({
       id: 'incidents',
-      data: filteredIncidents,
+      data: mapIncidents,
       pickable: true,
       stroked: false,
       filled: true,
       radiusUnits: 'pixels',
       getPosition: d => [d.lng, d.lat],
       getRadius: d => {
-        const provenance = getProvenance(d);
-        if (!provenance) return notMatchedSize; // notMatched: smaller
+        if (!d.provenance) return notMatchedSize; // notMatched: smaller
         return dotSize; // all matched incidents
       },
       getFillColor: d => {
-        const provenance = getProvenance(d);
         const baseColor = CATEGORY_COLORS_RGBA[d.serviceIssue?.category] || [90, 102, 114, 200];
-        if (!provenance) {
+        if (!d.provenance) {
           // notMatched: 25% opacity
           return [baseColor[0], baseColor[1], baseColor[2], 64];
         }
         return baseColor;
       },
       updateTriggers: {
-        getRadius: [searchResults?.provenance, dotSize],
-        getFillColor: [searchResults?.provenance],
+        getRadius: [provenanceByTicketRef, dotSize],
+        getFillColor: [provenanceByTicketRef],
       },
     }));
 
     return layerList;
-  }, [filteredIncidents, searchResults, searchMode, compareMode, dotSize]);
+  }, [mapIncidents, provenanceByTicketRef, searchMode, compareMode, dotSize]);
 
   const handleIncidentClick = useCallback((info) => {
-    if (info.object) navigate(`/incident/${info.object._id}`);
+    if (info.object) {
+      const ticketRef = info.object.serviceIssue?.ticketRef;
+      if (ticketRef) navigate(`/incident/${ticketRef}`);
+    }
   }, [navigate]);
 
-  // Category counts
+  // Category counts from full corpus
   const categoryCounts = useMemo(() => {
-    const counts = {};
+    const result = {};
     CATEGORIES.forEach(cat => {
-      counts[cat] = incidents.filter(inc => inc.serviceIssue?.category === cat).length;
+      result[cat] = incidents.filter(inc => inc.serviceIssue?.category === cat).length;
     });
-    return counts;
+    return result;
   }, [incidents]);
 
-  // Results summary
-  const resultsSummary = useMemo(() => {
-    if (!searchResults) return { lexicalCount: 6, semanticCount: 15, hybridCount: 21, both: 4, lexical: 2, semantic: 15 };
-    const lexicalCount = searchResults.lexical?.results?.length || 6;
-    const semanticCount = searchResults.semantic?.results?.length || 15;
-    const hybridCount = searchResults.hybrid?.results?.length || 21;
-    const provenance = searchResults.provenance || {};
-    const counts = { lexical: 0, semantic: 0, both: 0 };
-    Object.values(provenance).forEach(p => {
-      if (p === 'lexical') counts.lexical++;
-      else if (p === 'semantic') counts.semantic++;
-      else if (p === 'both') counts.both++;
-    });
-    return { lexicalCount, semanticCount, hybridCount, ...counts };
-  }, [searchResults]);
-
-  // UMAP points for scatter
-  const umapPoints = useMemo(() => {
-    return filteredIncidents
-      .filter(inc => umapCoords?.[inc._id])
+  // All UMAP points (full corpus, 323 points)
+  const allUmapPoints = useMemo(() => {
+    return incidents
+      .filter(inc => {
+        const ticketRef = inc.serviceIssue?.ticketRef;
+        return ticketRef && umapCoords?.[ticketRef];
+      })
       .map(inc => {
-        const coords = umapCoords[inc._id];
+        const ticketRef = inc.serviceIssue?.ticketRef;
+        const coords = umapCoords[ticketRef];
+        const provenance = provenanceByTicketRef[ticketRef] || null;
         return {
-          id: inc._id,
-          x: coords.x || coords[0] || 0,
-          y: coords.y || coords[1] || 0,
+          ticketRef,
+          x: coords.x || 0,
+          y: coords.y || 0,
           category: inc.serviceIssue?.category,
           type: inc.serviceIssue?.type,
+          provenance,
         };
       });
-  }, [filteredIncidents, umapCoords]);
-
-  // Type counts for UMAP legend
-  const typeCounts = useMemo(() => {
-    const counts = {};
-    filteredIncidents.forEach(inc => {
-      const type = inc.serviceIssue?.type;
-      if (type) counts[type] = (counts[type] || 0) + 1;
-    });
-    return counts;
-  }, [filteredIncidents]);
+  }, [incidents, umapCoords, provenanceByTicketRef]);
 
   // Category type counts for UMAP legend
   const categoryTypeCounts = useMemo(() => {
-    const counts = { consumer: {}, infrastructure: {}, business: {}, federal: {}, emerging_tech: {} };
-    filteredIncidents.forEach(inc => {
+    const result = { consumer: {}, infrastructure: {}, business: {}, federal: {}, emerging_tech: {} };
+    incidents.forEach(inc => {
       const cat = inc.serviceIssue?.category;
       const type = inc.serviceIssue?.type;
       if (cat && type) {
-        if (!counts[cat]) counts[cat] = {};
-        counts[cat][type] = (counts[cat][type] || 0) + 1;
+        if (!result[cat]) result[cat] = {};
+        result[cat][type] = (result[cat][type] || 0) + 1;
       }
     });
-    return counts;
-  }, [filteredIncidents]);
+    return result;
+  }, [incidents]);
+
+  // Donut chart calculations from counts
+  const donutData = useMemo(() => {
+    const { lexicalOnly = 0, semanticOnly = 0, bothPipelines = 0, notMatched = 0, hybridTotal = 0 } = counts;
+    const total = lexicalOnly + semanticOnly + bothPipelines + notMatched;
+    if (total === 0) return { segments: [], hybridTotal: 0 };
+
+    const circumference = 2 * Math.PI * 42; // r=42
+    const toArc = (count) => (count / total) * circumference;
+
+    return {
+      hybridTotal,
+      bothArc: toArc(bothPipelines),
+      semanticArc: toArc(semanticOnly),
+      lexicalArc: toArc(lexicalOnly),
+      notMatchedArc: toArc(notMatched),
+      bothOffset: 0,
+      semanticOffset: -toArc(bothPipelines),
+      lexicalOffset: -toArc(bothPipelines) - toArc(semanticOnly),
+    };
+  }, [counts]);
+
+  // Get per-mode results for compare panes
+  const lexicalResults = useMemo(() => {
+    return modeResults.lexical.map(r => {
+      const inc = incidents.find(i => i.serviceIssue?.ticketRef === r.ticketRef);
+      return inc ? { ...inc, _result: r } : null;
+    }).filter(Boolean);
+  }, [modeResults.lexical, incidents]);
+
+  const semanticResults = useMemo(() => {
+    return modeResults.semantic.map(r => {
+      const inc = incidents.find(i => i.serviceIssue?.ticketRef === r.ticketRef);
+      return inc ? { ...inc, _result: r } : null;
+    }).filter(Boolean);
+  }, [modeResults.semantic, incidents]);
+
+  const hybridResults = useMemo(() => {
+    return modeResults.hybrid.map(r => {
+      const inc = incidents.find(i => i.serviceIssue?.ticketRef === r.ticketRef);
+      return inc ? { ...inc, _result: r } : null;
+    }).filter(Boolean);
+  }, [modeResults.hybrid, incidents]);
+
+  // Feed cards - always show first N from hybrid results
+  const feedIncidents = hybridResults.slice(0, FEED_CARD_COUNT);
 
   return (
     <div className="search-shell">
@@ -224,32 +302,33 @@ export default function SearchShell() {
       <div className="results-banner">
         <div className="results-banner__stats">
           <span className="results-banner__stat">
-            <span className="results-banner__label">LEXICAL</span>
-            <span className="results-banner__value">{resultsSummary.lexicalCount}</span>
+            <span className="results-banner__label">FOUND BY KEYWORD</span>
+            <span className="results-banner__value">{counts.lexicalTotal || 0}</span>
           </span>
           <span className="results-banner__stat results-banner__stat--highlight">
-            <span className="results-banner__label">SEMANTIC</span>
-            <span className="results-banner__value">+{resultsSummary.semanticCount}</span>
+            <span className="results-banner__label">ADDED BY MEANING</span>
+            <span className="results-banner__value">+{counts.semanticOnly || 0}</span>
           </span>
           <span className="results-banner__stat results-banner__stat--primary">
-            <span className="results-banner__label">HYBRID</span>
-            <span className="results-banner__value">{resultsSummary.hybridCount}</span>
+            <span className="results-banner__label">TOTAL</span>
+            <span className="results-banner__value">{counts.hybridTotal || 0}</span>
           </span>
         </div>
         <div className="results-banner__recall">
-          recall 11pt +25% vs lexical)
+          recall +{counts.recallLiftPct || 0}% vs lexical
         </div>
 
-        {/* Ranked result cards */}
+        {/* Ranked result cards - from current mode */}
         <div className="results-banner__cards">
-          {filteredIncidents.slice(0, 6).map((inc, idx) => {
-            const score = searchResults?.scores?.[inc._id] || (0.95 - idx * 0.02);
+          {filteredResults.slice(0, 6).map((inc, idx) => {
+            const result = inc._result;
+            const score = result?.fusedScore ?? result?.vectorScore ?? result?.lexicalScore ?? 0;
             const isTop = idx === 0;
             return (
               <div
-                key={inc._id}
+                key={inc.serviceIssue?.ticketRef}
                 className={`results-banner__card ${isTop ? 'results-banner__card--top' : ''}`}
-                onClick={() => navigate(`/incident/${inc._id}`)}
+                onClick={() => navigate(`/incident/${inc.serviceIssue?.ticketRef}`)}
               >
                 <div className="results-banner__card-rank">
                   #{idx + 1}
@@ -437,25 +516,25 @@ export default function SearchShell() {
   $search: {
     index: "inc_text",
     text: {
-      query: "backhoe",
-      path: ["serviceIssue.narrative"]
+      query: "${searchQuery}",
+      path: ["searchBlob"]
     }
   }
 }`}</pre>
                   </div>
                   <div className="compare-pane__meta">
-                    <span className="compare-pane__meta-label">numCandidates:</span>
-                    <span className="compare-pane__meta-value">500</span>
-                    <span className="compare-pane__meta-label">limit:</span>
-                    <span className="compare-pane__meta-value">100</span>
+                    <span className="compare-pane__meta-label">latency:</span>
+                    <span className="compare-pane__meta-value">{searchResults?.modes?.lexical?.latencyMs || 0}ms</span>
+                    <span className="compare-pane__meta-label">indexes:</span>
+                    <span className="compare-pane__meta-value">{searchResults?.modes?.lexical?.indexes || 1}</span>
                   </div>
                   <div className="compare-pane__count">
-                    <span className="compare-pane__count-num" style={{ color: MODE_COLOR.lexical }}>19</span>
-                    <span className="compare-pane__count-label">of 323</span>
+                    <span className="compare-pane__count-num" style={{ color: MODE_COLOR.lexical }}>{modeResults.lexical.length}</span>
+                    <span className="compare-pane__count-label">of {corpusTotal}</span>
                   </div>
                   <div className="compare-pane__results">
-                    {filteredIncidents.slice(0, 4).map((inc, idx) => (
-                      <div key={inc._id} className="compare-pane__result">
+                    {lexicalResults.slice(0, 4).map((inc, idx) => (
+                      <div key={inc.serviceIssue?.ticketRef} className="compare-pane__result">
                         <span className="compare-pane__result-rank">#{idx + 1}</span>
                         <span
                           className="compare-pane__result-dot"
@@ -471,28 +550,28 @@ export default function SearchShell() {
                 <div className="compare-pane compare-pane--semantic">
                   <div className="compare-pane__header" style={{ color: MODE_COLOR.semantic }}>SEMANTIC</div>
                   <div className="compare-pane__code">
-                    <div className="compare-pane__code-line">$vectorSearch: <span className="code-key">voyage-4</span></div>
+                    <div className="compare-pane__code-line">$vectorSearch: <span className="code-key">{searchResults?.embeddingModel || 'voyage-4'}</span></div>
                     <pre className="compare-pane__pre">{`{
   $vectorSearch: {
     index: "inc_vec",
-    path: "embedding_vector",
+    path: "embedding.vector",
     queryVector: [...]
   }
 }`}</pre>
                   </div>
                   <div className="compare-pane__meta">
-                    <span className="compare-pane__meta-label">numCandidates:</span>
-                    <span className="compare-pane__meta-value">500</span>
-                    <span className="compare-pane__meta-label">limit:</span>
-                    <span className="compare-pane__meta-value">100</span>
+                    <span className="compare-pane__meta-label">latency:</span>
+                    <span className="compare-pane__meta-value">{searchResults?.modes?.semantic?.latencyMs || 0}ms</span>
+                    <span className="compare-pane__meta-label">indexes:</span>
+                    <span className="compare-pane__meta-value">{searchResults?.modes?.semantic?.indexes || 1}</span>
                   </div>
                   <div className="compare-pane__count">
-                    <span className="compare-pane__count-num" style={{ color: MODE_COLOR.semantic }}>19</span>
-                    <span className="compare-pane__count-label">of 323</span>
+                    <span className="compare-pane__count-num" style={{ color: MODE_COLOR.semantic }}>{modeResults.semantic.length}</span>
+                    <span className="compare-pane__count-label">of {corpusTotal}</span>
                   </div>
                   <div className="compare-pane__results">
-                    {filteredIncidents.slice(0, 4).map((inc, idx) => (
-                      <div key={inc._id} className="compare-pane__result">
+                    {semanticResults.slice(0, 4).map((inc, idx) => (
+                      <div key={inc.serviceIssue?.ticketRef} className="compare-pane__result">
                         <span className="compare-pane__result-rank">#{idx + 1}</span>
                         <span
                           className="compare-pane__result-dot"
@@ -510,28 +589,28 @@ export default function SearchShell() {
                   <div className="compare-pane__code">
                     <div className="compare-pane__code-line">$rankFusion: <span className="code-key">weights</span></div>
                     <pre className="compare-pane__pre">{`{
-  input: pipelines: [ lexical, (...), semantic: (...) ],
+  input: pipelines: [ lexical, semantic ],
   combination: {
-    weights: { lexical: 0.38, semantic: 0.62 }
+    weights: { lexical: ${searchResults?.modes?.hybrid?.weights?.lexical || 0.38}, semantic: ${searchResults?.modes?.hybrid?.weights?.semantic || 0.62} }
   }
 }`}</pre>
                   </div>
                   <div className="compare-pane__meta">
                     <span className="compare-pane__meta-label">latency:</span>
-                    <span className="compare-pane__meta-value">+4ms</span>
+                    <span className="compare-pane__meta-value">{searchResults?.modes?.hybrid?.latencyMs || 0}ms</span>
                     <span className="compare-pane__meta-label">indexes:</span>
-                    <span className="compare-pane__meta-value">2</span>
+                    <span className="compare-pane__meta-value">{searchResults?.modes?.hybrid?.indexes || 2}</span>
                   </div>
                   <div className="compare-pane__count compare-pane__count--highlight">
-                    <span className="compare-pane__count-num" style={{ color: MODE_COLOR.hybrid }}>21</span>
-                    <span className="compare-pane__count-label">of 323</span>
+                    <span className="compare-pane__count-num" style={{ color: MODE_COLOR.hybrid }}>{modeResults.hybrid.length}</span>
+                    <span className="compare-pane__count-label">of {corpusTotal}</span>
                   </div>
                   <div className="compare-pane__subtitle">
-                    + lexical only + 16 semantic-only + 4 both
+                    {counts.lexicalOnly || 0} lexical-only + {counts.semanticOnly || 0} semantic-only + {counts.bothPipelines || 0} both
                   </div>
                   <div className="compare-pane__results">
-                    {filteredIncidents.slice(0, 4).map((inc, idx) => (
-                      <div key={inc._id} className="compare-pane__result">
+                    {hybridResults.slice(0, 4).map((inc, idx) => (
+                      <div key={inc.serviceIssue?.ticketRef} className="compare-pane__result">
                         <span className="compare-pane__result-rank">#{idx + 1}</span>
                         <span
                           className="compare-pane__result-dot"
@@ -551,16 +630,16 @@ export default function SearchShell() {
                   {/* Horizontal Bar Venn */}
                   <div className="result-overlap__bar-venn">
                     <div className="result-overlap__bar">
-                      <div className="result-overlap__bar-segment result-overlap__bar-segment--lexical" style={{ flex: 2 }}>
+                      <div className="result-overlap__bar-segment result-overlap__bar-segment--lexical" style={{ flex: counts.lexicalOnly || 1 }}>
                         <span className="result-overlap__bar-label">lexical only</span>
-                        <span className="result-overlap__bar-value">2</span>
+                        <span className="result-overlap__bar-value">{counts.lexicalOnly || 0}</span>
                       </div>
-                      <div className="result-overlap__bar-segment result-overlap__bar-segment--both" style={{ flex: 4 }}>
-                        <span className="result-overlap__bar-value">4</span>
+                      <div className="result-overlap__bar-segment result-overlap__bar-segment--both" style={{ flex: counts.bothPipelines || 1 }}>
+                        <span className="result-overlap__bar-value">{counts.bothPipelines || 0}</span>
                       </div>
-                      <div className="result-overlap__bar-segment result-overlap__bar-segment--semantic" style={{ flex: 15 }}>
+                      <div className="result-overlap__bar-segment result-overlap__bar-segment--semantic" style={{ flex: counts.semanticOnly || 1 }}>
                         <span className="result-overlap__bar-label">semantic only</span>
-                        <span className="result-overlap__bar-value">15</span>
+                        <span className="result-overlap__bar-value">{counts.semanticOnly || 0}</span>
                       </div>
                     </div>
                     <div className="result-overlap__bar-legend">
@@ -581,7 +660,7 @@ export default function SearchShell() {
                   <div className="result-overlap__metrics">
                     <div className="result-overlap__metric">
                       <span className="result-overlap__metric-label">recall vs lexical</span>
-                      <span className="result-overlap__metric-value result-overlap__metric-value--positive">+25%</span>
+                      <span className="result-overlap__metric-value result-overlap__metric-value--positive">+{counts.recallLiftPct || 0}%</span>
                     </div>
                     <div className="result-overlap__metric">
                       <span className="result-overlap__metric-label">exact ID retained</span>
@@ -589,7 +668,7 @@ export default function SearchShell() {
                     </div>
                     <div className="result-overlap__metric">
                       <span className="result-overlap__metric-label">added latency</span>
-                      <span className="result-overlap__metric-value">+4ms</span>
+                      <span className="result-overlap__metric-value">+{(searchResults?.modes?.hybrid?.latencyMs || 0) - (searchResults?.modes?.lexical?.latencyMs || 0)}ms</span>
                     </div>
                   </div>
                 </div>
@@ -638,7 +717,7 @@ export default function SearchShell() {
                 )}
               </div>
 
-              {/* UMAP Panel - Bottom of center column */}
+              {/* UMAP Panel - Bottom of center column - ALL 323 points */}
               <div className="umap-panel">
                 <div className="umap-panel__header">
                   <span className="umap-panel__title">SEMANTIC SPACE — UMAP PROJECTION</span>
@@ -654,30 +733,30 @@ export default function SearchShell() {
                     </defs>
                     <rect width="400" height="100" fill="url(#umap-grid)" />
 
-                    {/* Scatter points */}
-                    {umapPoints.map((pt) => (
+                    {/* All corpus points - matched ones highlighted */}
+                    {allUmapPoints.map((pt) => (
                       <circle
-                        key={pt.id}
+                        key={pt.ticketRef}
                         cx={20 + pt.x * 360}
                         cy={10 + pt.y * 80}
-                        r={4}
+                        r={pt.provenance ? 4 : 2}
                         fill={getCategoryColor(pt.category)}
-                        opacity={0.85}
+                        opacity={pt.provenance ? 0.9 : 0.25}
                       />
                     ))}
                   </svg>
                   <div className="umap-panel__legend">
                     <div className="umap-panel__legend-cat" style={{ color: CATEGORY_COLORS.consumer }}>Consumer</div>
                     <div className="umap-panel__legend-row">
-                      Fiber <strong>{categoryTypeCounts.consumer?.fiber || 7}</strong> · broadband <strong>{categoryTypeCounts.consumer?.broadband || 5}</strong>
+                      Fiber <strong>{categoryTypeCounts.consumer?.fiber || 0}</strong> · broadband <strong>{categoryTypeCounts.consumer?.broadband || 0}</strong>
                     </div>
                     <div className="umap-panel__legend-row">
-                      5g <strong>{categoryTypeCounts.consumer?.['5g'] || 2}</strong> · wireless <strong>{categoryTypeCounts.consumer?.wireless || 1}</strong>
+                      5g <strong>{categoryTypeCounts.consumer?.['5g'] || 0}</strong> · wireless <strong>{categoryTypeCounts.consumer?.wireless || 0}</strong>
                     </div>
                   </div>
                 </div>
                 <div className="umap-panel__footer">
-                  Scattered across 5 states geographically. One cluster semantically.
+                  Scattered across many states geographically. One cluster semantically.
                 </div>
               </div>
             </>
@@ -688,7 +767,7 @@ export default function SearchShell() {
         <aside className="feeds-rail">
           <div className="feeds-rail__header">
             <span className="feeds-rail__title">LIVE FEEDS</span>
-            <span className="feeds-rail__count">{filteredIncidents.length} events</span>
+            <span className="feeds-rail__count">{feedIncidents.length} events</span>
           </div>
 
           {/* Systemic Event */}
@@ -699,8 +778,14 @@ export default function SearchShell() {
                 <span className="systemic-alert__title">SYSTEMIC EVENT DETECTED</span>
               </div>
               <div className="systemic-alert__stats">
-                <div><span>6 incidents</span> · <span>6 types</span> · <span>3 categories</span> · <span>8.2km</span> · <span>11 min</span></div>
-                <div className="systemic-alert__location">Warrior, AL</div>
+                <div>
+                  <span>{detectedCluster.stats?.memberCount || 6} incidents</span> ·
+                  <span>{detectedCluster.stats?.distinctTypes || 6} types</span> ·
+                  <span>{detectedCluster.stats?.distinctCategories || 3} categories</span> ·
+                  <span>{detectedCluster.stats?.maxPairwiseKm || 8.2}km</span> ·
+                  <span>{detectedCluster.stats?.spanMinutes || 11} min</span>
+                </div>
+                <div className="systemic-alert__location">{detectedCluster.city}, {detectedCluster.state}</div>
               </div>
               <button
                 className="systemic-alert__link"
@@ -713,11 +798,11 @@ export default function SearchShell() {
 
           {/* Incident Cards */}
           <div className="feeds-rail__cards">
-            {filteredIncidents.slice(0, 3).map(inc => (
+            {feedIncidents.map(inc => (
               <div
-                key={inc._id}
+                key={inc.serviceIssue?.ticketRef}
                 className="incident-preview"
-                onClick={() => navigate(`/incident/${inc._id}`)}
+                onClick={() => navigate(`/incident/${inc.serviceIssue?.ticketRef}`)}
               >
                 <div className="incident-preview__header">
                   <span
@@ -733,8 +818,8 @@ export default function SearchShell() {
 {`"ticketRef": "${inc.serviceIssue?.ticketRef}",
 "type": "${inc.serviceIssue?.type}",
 "severity": "${inc.serviceIssue?.severity}",
-"impact": "${inc.serviceIssue?.impact?.count} ${inc.serviceIssue?.impact?.unit || 'subscribers'}",
-"count": ${inc.serviceIssue?.impact?.count || 340}`}
+"impact": "${inc.serviceIssue?.impact?.count} ${inc.serviceIssue?.impact?.unit}",
+"count": ${inc.serviceIssue?.impact?.count}`}
                 </pre>
               </div>
             ))}
@@ -749,30 +834,38 @@ export default function SearchShell() {
               </div>
               <div className="matches-chart__content">
                 <div className="matches-chart__bars">
-                  {[
-                    { type: 'fiber', count: 7, max: 7, category: 'consumer' },
-                    { type: 'backhaul', count: 5, max: 7, category: 'infrastructure' },
-                    { type: 'smartcell', count: 4, max: 7, category: 'infrastructure' },
-                    { type: 'construction', count: 3, max: 7, category: 'infrastructure' },
-                    { type: 'broadband', count: 2, max: 7, category: 'consumer' },
-                  ].map(bar => (
-                    <div key={bar.type} className="matches-chart__bar-row">
-                      <span className="matches-chart__bar-label">{bar.type}</span>
-                      <div className="matches-chart__bar-track">
-                        <div
-                          className="matches-chart__bar-fill"
-                          style={{
-                            width: `${(bar.count / bar.max) * 100}%`,
-                            backgroundColor: CATEGORY_COLORS[bar.category]
-                          }}
-                        />
-                      </div>
-                      <span className="matches-chart__bar-value">{bar.count}</span>
-                    </div>
-                  ))}
+                  {(() => {
+                    // Compute type counts from hybrid results
+                    const typeCounts = {};
+                    hybridResults.forEach(inc => {
+                      const type = inc.serviceIssue?.type;
+                      if (type) typeCounts[type] = (typeCounts[type] || 0) + 1;
+                    });
+                    const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                    const max = sorted[0]?.[1] || 1;
+                    return sorted.map(([type, count]) => {
+                      const inc = hybridResults.find(i => i.serviceIssue?.type === type);
+                      const category = inc?.serviceIssue?.category || 'infrastructure';
+                      return (
+                        <div key={type} className="matches-chart__bar-row">
+                          <span className="matches-chart__bar-label">{type}</span>
+                          <div className="matches-chart__bar-track">
+                            <div
+                              className="matches-chart__bar-fill"
+                              style={{
+                                width: `${(count / max) * 100}%`,
+                                backgroundColor: CATEGORY_COLORS[category]
+                              }}
+                            />
+                          </div>
+                          <span className="matches-chart__bar-value">{count}</span>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
                 <div className="matches-chart__total">
-                  Total: <strong>{resultsSummary.hybridCount}</strong>
+                  Total: <strong>{counts.hybridTotal || 0}</strong>
                 </div>
               </div>
               <div className="matches-chart__footer">
@@ -786,14 +879,14 @@ export default function SearchShell() {
               <div className="result-composition__content">
                 <div className="result-composition__donut">
                   <svg viewBox="0 0 100 100">
-                    {/* Outer ring segments */}
+                    {/* Outer ring segments - computed from counts */}
                     <circle cx="50" cy="50" r="42" fill="none" stroke="#1a1f24" strokeWidth="8" />
                     <circle
                       cx="50" cy="50" r="42"
                       fill="none"
                       stroke={MODE_COLOR.hybrid}
                       strokeWidth="8"
-                      strokeDasharray="52 212"
+                      strokeDasharray={`${donutData.bothArc} ${2 * Math.PI * 42 - donutData.bothArc}`}
                       strokeDashoffset="0"
                       transform="rotate(-90 50 50)"
                     />
@@ -802,8 +895,8 @@ export default function SearchShell() {
                       fill="none"
                       stroke={MODE_COLOR.semantic}
                       strokeWidth="8"
-                      strokeDasharray="98 166"
-                      strokeDashoffset="-52"
+                      strokeDasharray={`${donutData.semanticArc} ${2 * Math.PI * 42 - donutData.semanticArc}`}
+                      strokeDashoffset={donutData.semanticOffset}
                       transform="rotate(-90 50 50)"
                     />
                     <circle
@@ -811,44 +904,39 @@ export default function SearchShell() {
                       fill="none"
                       stroke={MODE_COLOR.lexical}
                       strokeWidth="8"
-                      strokeDasharray="26 238"
-                      strokeDashoffset="-150"
+                      strokeDasharray={`${donutData.lexicalArc} ${2 * Math.PI * 42 - donutData.lexicalArc}`}
+                      strokeDashoffset={donutData.lexicalOffset}
                       transform="rotate(-90 50 50)"
                     />
                     {/* Center text */}
                     <text x="50" y="46" textAnchor="middle" fill="#E8EDF2" fontSize="18" fontWeight="600">
-                      {resultsSummary.hybridCount}
+                      {counts.hybridTotal || 0}
                     </text>
                     <text x="50" y="60" textAnchor="middle" fill={MODE_COLOR.semantic} fontSize="10">
-                      +{resultsSummary.semanticCount}
+                      +{counts.semanticOnly || 0}
                     </text>
                   </svg>
                 </div>
                 <div className="result-composition__legend">
                   <div className="result-composition__item">
                     <span className="result-composition__dot" style={{ background: MODE_COLOR.hybrid }} />
-                    <span>anchor</span>
-                    <span className="result-composition__desc">counted in "both"</span>
+                    <span>both pipelines</span>
+                    <span className="result-composition__value">{counts.bothPipelines || 0}</span>
                   </div>
                   <div className="result-composition__item">
                     <span className="result-composition__dot" style={{ background: MODE_COLOR.semantic }} />
                     <span>semantic only</span>
-                    <span className="result-composition__value">{resultsSummary.semanticCount}</span>
+                    <span className="result-composition__value">{counts.semanticOnly || 0}</span>
                   </div>
                   <div className="result-composition__item">
                     <span className="result-composition__dot" style={{ background: MODE_COLOR.lexical }} />
                     <span>lexical only</span>
-                    <span className="result-composition__value">{resultsSummary.lexical || 2}</span>
-                  </div>
-                  <div className="result-composition__item">
-                    <span className="result-composition__dot" style={{ background: MODE_COLOR.hybrid }} />
-                    <span>both</span>
-                    <span className="result-composition__value">{resultsSummary.both || 4}</span>
+                    <span className="result-composition__value">{counts.lexicalOnly || 0}</span>
                   </div>
                   <div className="result-composition__item result-composition__item--muted">
                     <span className="result-composition__dot" style={{ background: '#3a3f44' }} />
                     <span>not matched</span>
-                    <span className="result-composition__value">302</span>
+                    <span className="result-composition__value">{counts.notMatched || 0}</span>
                   </div>
                 </div>
               </div>

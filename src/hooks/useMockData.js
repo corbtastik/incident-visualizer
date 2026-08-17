@@ -4,6 +4,9 @@
  * This hook provides all the mock data needed for the UI.
  * When we integrate with MongoDB later, this will be replaced
  * with actual API calls.
+ *
+ * JOIN KEY: ticketRef (not _id)
+ * All lookups use serviceIssue.ticketRef as the canonical identifier.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -30,11 +33,31 @@ export function useMockData() {
   const neighbours = useMemo(() => mockNeighbours || {}, []);
   const umapCoords = useMemo(() => mockUmap || {}, []);
 
-  // Helper to get incident by ID
-  const getIncidentById = (id) => {
+  // Dev assertions for data consistency
+  useEffect(() => {
+    if (searchResults.counts) {
+      const { lexicalOnly, semanticOnly, bothPipelines, hybridTotal, notMatched, corpusTotal } = {
+        ...searchResults.counts,
+        corpusTotal: searchResults.corpusTotal
+      };
+
+      if (lexicalOnly + semanticOnly + bothPipelines !== hybridTotal) {
+        console.warn(
+          `[useMockData] Count mismatch: ${lexicalOnly} + ${semanticOnly} + ${bothPipelines} !== ${hybridTotal}`
+        );
+      }
+      if (hybridTotal + notMatched !== corpusTotal) {
+        console.warn(
+          `[useMockData] Corpus mismatch: ${hybridTotal} + ${notMatched} !== ${corpusTotal}`
+        );
+      }
+    }
+  }, [searchResults]);
+
+  // Helper to get incident by ticketRef (primary) or _id (fallback)
+  const getIncidentByTicketRef = (ticketRef) => {
     return incidents.find(inc =>
-      inc._id === id ||
-      inc.serviceIssue?.ticketRef === id
+      inc.serviceIssue?.ticketRef === ticketRef || inc._id === ticketRef
     );
   };
 
@@ -43,17 +66,34 @@ export function useMockData() {
     return clusters.find(c => c.clusterId === id);
   };
 
-  // Helper to get neighbours for an incident
-  const getNeighbours = (incidentId) => {
-    return neighbours[incidentId] || [];
+  // Helper to get neighbours for an incident by ticketRef
+  const getNeighbours = (ticketRef) => {
+    return neighbours[ticketRef] || [];
   };
 
-  // Helper to get UMAP coordinates for an incident
-  const getUmapCoords = (incidentId) => {
-    return umapCoords[incidentId] || null;
+  // Helper to get UMAP coordinates for an incident by ticketRef
+  const getUmapCoords = (ticketRef) => {
+    return umapCoords[ticketRef] || null;
   };
 
-  // Category counts
+  // Build a map from ticketRef to result object for quick lookup
+  const resultsByTicketRef = useMemo(() => {
+    const map = {};
+    if (searchResults.modes) {
+      // Index hybrid results (superset)
+      searchResults.modes.hybrid?.results?.forEach(r => {
+        map[r.ticketRef] = r;
+      });
+    }
+    return map;
+  }, [searchResults]);
+
+  // Helper to get result info for an incident
+  const getResultInfo = (ticketRef) => {
+    return resultsByTicketRef[ticketRef] || null;
+  };
+
+  // Category counts from full corpus
   const categoryCounts = useMemo(() => {
     const counts = {
       business: 0,
@@ -71,7 +111,7 @@ export function useMockData() {
     return counts;
   }, [incidents]);
 
-  // Type counts
+  // Type counts from full corpus
   const typeCounts = useMemo(() => {
     const counts = {};
     incidents.forEach(inc => {
@@ -92,10 +132,12 @@ export function useMockData() {
     umapCoords,
     categoryCounts,
     typeCounts,
-    getIncidentById,
+    getIncidentByTicketRef,
     getClusterById,
     getNeighbours,
     getUmapCoords,
+    getResultInfo,
+    resultsByTicketRef,
   };
 }
 

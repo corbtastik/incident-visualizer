@@ -2,7 +2,12 @@
  * DetailShell - Incident Detail View (Screen 3)
  *
  * Layout: 320px left rail | flexible center (map + tabs) | 380px right rail
- * Matches mockup screen-3-incident-detail.jpg exactly
+ *
+ * Data wiring:
+ * - Join key is ticketRef (not _id)
+ * - Neighbours from mock-neighbours.json keyed by ticketRef
+ * - SERVICE ISSUE panel dynamically renders available fields
+ * - Score rows from result data, null lexicalRank shown as empty
  */
 
 import React, { useState, useMemo } from 'react';
@@ -17,7 +22,7 @@ import { useMockData } from '../hooks/useMockData';
 import { useMapSettings } from '../context/MapSettingsContext';
 import { CATEGORY_COLORS_RGBA, CATEGORY_COLORS, getCategoryColor, getCategoryFromType } from '../utils/colors';
 import { MAP_CONFIG } from '../utils/constants';
-import { formatDate, formatScore, formatCurrency, formatDuration } from '../utils/formatters';
+import { formatDate, formatCurrency } from '../utils/formatters';
 import VideoPreview from '../components/media/VideoPreview';
 import VideoPlayer from '../components/media/VideoPlayer';
 import ImagePreview from '../components/media/ImagePreview';
@@ -69,28 +74,42 @@ const SAMPLE_VIDEOS = [
   }
 ];
 
+// Fields to skip in SERVICE ISSUE panel (rendered elsewhere or internal)
+const SKIP_FIELDS = ['ticketRef', 'category', 'narrative', 'resolution'];
+
+// Fields to render first in SERVICE ISSUE panel
+const PRIORITY_FIELDS = ['type', 'issue', 'symptoms', 'severity', 'reportedBy', 'impact'];
+
 export default function DetailShell() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { incidents, clusters, neighbours } = useMockData();
+  const { incidents, clusters, neighbours, searchResults, getIncidentByTicketRef } = useMockData();
   const { dotSize } = useMapSettings();
 
   // Determine if this is an incident or cluster view
   const isCluster = id?.startsWith('CLUSTER-');
 
-  // Find the current item
+  // Find the current incident by ticketRef
   const incident = useMemo(() => {
-    return incidents.find(inc => inc._id === id || inc.serviceIssue?.ticketRef === id);
+    return incidents.find(inc => inc.serviceIssue?.ticketRef === id);
   }, [incidents, id]);
 
   const cluster = useMemo(() => {
     return clusters.find(c => c.clusterId === id);
   }, [clusters, id]);
 
-  // Get neighbours for incident view
+  // Get result info for this incident from search results
+  const resultInfo = useMemo(() => {
+    if (!incident || !searchResults?.modes?.hybrid?.results) return null;
+    const ticketRef = incident.serviceIssue?.ticketRef;
+    return searchResults.modes.hybrid.results.find(r => r.ticketRef === ticketRef) || null;
+  }, [incident, searchResults]);
+
+  // Get neighbours for incident view - keyed by ticketRef
   const incidentNeighbours = useMemo(() => {
     if (!incident) return [];
-    return neighbours[incident._id] || [];
+    const ticketRef = incident.serviceIssue?.ticketRef;
+    return neighbours[ticketRef] || [];
   }, [incident, neighbours]);
 
   // Tab state
@@ -104,10 +123,10 @@ export default function DetailShell() {
 
   // Map view state
   const [viewState, setViewState] = useState(() => {
-    const item = incident || (cluster && incidents.find(i => i.serviceIssue?.ticketRef === cluster.seedId));
+    const item = incident || (cluster && incidents.find(i => i.serviceIssue?.ticketRef === cluster.seedTicketRef));
     return {
-      longitude: item?.lng || -82.491,
-      latitude: item?.lat || 39.135,
+      longitude: item?.lng || -86.8,
+      latitude: item?.lat || 33.8,
       zoom: 9,
     };
   });
@@ -118,12 +137,13 @@ export default function DetailShell() {
     const layerList = [];
 
     // Scale factors for different dot types
-    const neighbourSize = dotSize * 0.73;  // slightly smaller than main
-    const mainSize = dotSize * 1.27;       // slightly larger, with ring
+    const neighbourSize = dotSize * 0.73;
+    const mainSize = dotSize * 1.27;
     const ringWidth = Math.max(2, dotSize * 0.27);
 
+    // Find neighbour incidents
     const neighbourIncidents = incidentNeighbours
-      .map(n => incidents.find(i => i.serviceIssue?.ticketRef === n.incidentId))
+      .map(n => incidents.find(i => i.serviceIssue?.ticketRef === n.ticketRef))
       .filter(Boolean);
 
     // Add arcs from incident to neighbours
@@ -132,7 +152,7 @@ export default function DetailShell() {
       data: neighbourIncidents.map(n => ({
         source: incident,
         target: n,
-        similarity: incidentNeighbours.find(nb => nb.incidentId === n.serviceIssue?.ticketRef)?.similarity || 0.5,
+        similarity: incidentNeighbours.find(nb => nb.ticketRef === n.serviceIssue?.ticketRef)?.similarity || 0.5,
       })),
       pickable: false,
       getSourcePosition: d => [d.source.lng, d.source.lat],
@@ -185,7 +205,7 @@ export default function DetailShell() {
           <div className="detail-rail__back">
             <Link to="/" className="detail-rail__back-link">← back to search</Link>
           </div>
-          <div className="detail-rail__empty">Item not found</div>
+          <div className="detail-rail__empty">Item not found: {id}</div>
         </aside>
         <main className="detail-center" />
         <aside className="detail-context" />
@@ -195,7 +215,6 @@ export default function DetailShell() {
 
   // For cluster view, redirect to cluster shell (Screen 4)
   if (isCluster) {
-    // Handle cluster view separately - for now show basic info
     return (
       <div className="detail-shell">
         <aside className="detail-rail">
@@ -216,6 +235,144 @@ export default function DetailShell() {
     );
   }
 
+  // Get counts from search results
+  const hybridTotal = searchResults?.counts?.hybridTotal || 22;
+
+  // Derive highlight spans from narrative - VERBATIM substrings only
+  const narrative = incident.serviceIssue?.narrative || '';
+  const query = searchResults?.query || 'backhoe damage near SE-MCA-2211';
+
+  // Try to find query terms in narrative for lexical highlight
+  const lexicalHighlight = useMemo(() => {
+    const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 3);
+    for (const term of queryTerms) {
+      const idx = narrative.toLowerCase().indexOf(term);
+      if (idx !== -1) {
+        // Find word boundaries
+        const start = narrative.lastIndexOf(' ', idx) + 1;
+        let end = narrative.indexOf(' ', idx + term.length);
+        if (end === -1) end = narrative.length;
+        // Expand to include surrounding context (up to 60 chars)
+        const contextStart = Math.max(0, start - 30);
+        const contextEnd = Math.min(narrative.length, end + 30);
+        const prefix = contextStart > 0 ? '...' : '';
+        const suffix = contextEnd < narrative.length ? '...' : '';
+        const beforeMatch = narrative.slice(contextStart, idx);
+        const match = narrative.slice(idx, idx + term.length);
+        const afterMatch = narrative.slice(idx + term.length, contextEnd);
+        return { prefix, beforeMatch, match, afterMatch, suffix };
+      }
+    }
+    return null;
+  }, [narrative, query]);
+
+  // For rerank highlight - find first sentence or clause that seems semantically relevant
+  const rerankHighlight = useMemo(() => {
+    // Look for technical phrases that would score high in reranking
+    const patterns = [
+      /Optical power collapsed[^.]+/i,
+      /Reading -?\d+\.?\d*dBm[^.]+/i,
+      /OTDR places[^.]+/i,
+      /errored seconds[^.]+/i,
+      /bore contacted[^.]+/i,
+      /fiber cut[^.]+/i,
+    ];
+    for (const pattern of patterns) {
+      const match = narrative.match(pattern);
+      if (match) {
+        return match[0];
+      }
+    }
+    // Fallback: first sentence if it's technical
+    const firstSentence = narrative.split('.')[0];
+    if (firstSentence && firstSentence.length > 20) {
+      return firstSentence;
+    }
+    return null;
+  }, [narrative]);
+
+  // Render SERVICE ISSUE fields dynamically
+  const renderServiceIssueFields = () => {
+    const si = incident.serviceIssue;
+    if (!si) return null;
+
+    const fields = [];
+
+    // Render priority fields first
+    PRIORITY_FIELDS.forEach(key => {
+      if (si[key] !== undefined && !SKIP_FIELDS.includes(key)) {
+        fields.push(renderField(key, si[key], si));
+      }
+    });
+
+    // Then render remaining fields
+    Object.keys(si).forEach(key => {
+      if (!PRIORITY_FIELDS.includes(key) && !SKIP_FIELDS.includes(key) && si[key] !== undefined) {
+        fields.push(renderField(key, si[key], si));
+      }
+    });
+
+    return fields;
+  };
+
+  const renderField = (key, value, si) => {
+    // Special formatting for specific fields
+    if (key === 'impact' && typeof value === 'object') {
+      return (
+        <div key={key} className="detail-rail__field">
+          <span className="detail-rail__field-label">{key}</span>
+          <span className="detail-rail__field-value">
+            {value.count} {value.unit} · {value.scope}
+          </span>
+        </div>
+      );
+    }
+
+    if (key === 'symptoms' && Array.isArray(value)) {
+      return (
+        <div key={key} className="detail-rail__field">
+          <span className="detail-rail__field-label">{key}</span>
+          <span className="detail-rail__field-value detail-rail__field-value--wrap">
+            {value.join(', ')}
+          </span>
+        </div>
+      );
+    }
+
+    if (key === 'opticalPowerDbm' && si.expectedPowerDbm !== undefined) {
+      return (
+        <div key={key} className="detail-rail__field">
+          <span className="detail-rail__field-label">{key}</span>
+          <span className="detail-rail__field-value">
+            {value} <span className="detail-rail__field-expected">(expected {si.expectedPowerDbm})</span>
+          </span>
+        </div>
+      );
+    }
+
+    if (Array.isArray(value)) {
+      return (
+        <div key={key} className="detail-rail__field">
+          <span className="detail-rail__field-label">{key}</span>
+          <span className="detail-rail__field-value detail-rail__field-value--wrap">
+            {value.join(', ')}
+          </span>
+        </div>
+      );
+    }
+
+    if (typeof value === 'object') {
+      return null; // Skip complex objects not handled above
+    }
+
+    return (
+      <div key={key} className="detail-rail__field">
+        <span className="detail-rail__field-label">{key}</span>
+        <span className="detail-rail__field-value">{String(value)}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="detail-shell">
       {/* ════════════════════════════════════════════════════════════════════════
@@ -224,7 +381,7 @@ export default function DetailShell() {
       <aside className="detail-rail">
         {/* Back Link */}
         <div className="detail-rail__back">
-          <Link to="/" className="detail-rail__back-link">← back to 21 results</Link>
+          <Link to="/" className="detail-rail__back-link">← back to {hybridTotal} results</Link>
         </div>
 
         {/* Incident Header */}
@@ -235,11 +392,11 @@ export default function DetailShell() {
               style={{ backgroundColor: getCategoryColor(incident.serviceIssue?.category) }}
             />
             <span className="detail-rail__title">
-              {incident.serviceIssue?.category === 'consumer' ? 'Fiber' : incident.serviceIssue?.type} — {incident.serviceIssue?.symptoms?.[0]?.replace(/-/g, ' ') || 'light level low'}
+              {incident.serviceIssue?.type} — {incident.serviceIssue?.issue || incident.serviceIssue?.symptoms?.[0]?.replace(/-/g, ' ')}
             </span>
           </div>
           <div className="detail-rail__meta">
-            {incident.serviceIssue?.ticketRef} · {incident.city}, {incident.state || 'OH'} · {formatDate(incident.ts)}
+            {incident.serviceIssue?.ticketRef} · {incident.city}, {incident.state} · {formatDate(incident.ts)}
           </div>
 
           {/* Severity Pills */}
@@ -256,7 +413,7 @@ export default function DetailShell() {
 
           {/* Result Position */}
           <div className="detail-rail__position">
-            result #1 of 21 · hybrid
+            result #{resultInfo?.fusedRank || '—'} of {hybridTotal} · hybrid
           </div>
         </div>
 
@@ -280,17 +437,23 @@ export default function DetailShell() {
         <div className="detail-rail__content">
           {/* Cluster Status */}
           <div className="detail-rail__cluster-status">
-            <span className="detail-rail__cluster-label">Not part of any active cluster</span>
-            <span className="detail-rail__cluster-nearest">
-              · nearest <span className="detail-rail__cluster-link">CLUSTER-2026-0812-004</span> (Warrior, AL · 0.79)
-            </span>
+            {incident.correlation?.clusterId ? (
+              <>
+                <span className="detail-rail__cluster-label">Part of cluster</span>
+                <Link to={`/cluster/${incident.correlation.clusterId}`} className="detail-rail__cluster-link">
+                  {incident.correlation.clusterId}
+                </Link>
+              </>
+            ) : (
+              <span className="detail-rail__cluster-label">Not part of any active cluster</span>
+            )}
           </div>
 
           {/* Narrative Section */}
           <div className="detail-rail__section">
             <div className="detail-rail__section-title">NARRATIVE</div>
             <p className="detail-rail__narrative">
-              {incident.serviceIssue?.narrative || `Optical power collapsed on PON 1/3/4 off OLT-MCA-07. Reading -31.4dBm against -19.0 nominal. OTDR places the event at 1840m, just past the SE-MCA-2211 enclosure. 340 subscribers dark. Contractor bore work active in the area since Monday.`}
+              {narrative}
             </p>
           </div>
 
@@ -301,28 +464,53 @@ export default function DetailShell() {
             {/* Match Query */}
             <div className="detail-rail__match-row">
               <span className="detail-rail__match-label">matched against:</span>
-              <span className="detail-rail__match-query">"backhoe damage near SE-MCA-2211"</span>
+              <span className="detail-rail__match-query">"{query}"</span>
             </div>
 
             {/* Score Table */}
             <div className="detail-rail__scores">
+              {/* Lexical rank - show empty if null */}
               <div className="detail-rail__score-row">
                 <span className="detail-rail__score-type">Lexical rank</span>
-                <span className="detail-rail__score-badge detail-rail__score-badge--multi">MULTI</span>
-                <span className="detail-rail__score-rank">#1</span>
-                <span className="detail-rail__score-value">0.94</span>
+                <span className="detail-rail__score-badge detail-rail__score-badge--bm25">BM25</span>
+                {resultInfo?.lexicalRank != null ? (
+                  <>
+                    <span className="detail-rail__score-rank">#{resultInfo.lexicalRank}</span>
+                    <span className="detail-rail__score-value">{resultInfo.lexicalScore?.toFixed(2)}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="detail-rail__score-rank detail-rail__score-rank--empty">—</span>
+                    <span className="detail-rail__score-value detail-rail__score-value--empty">
+                      not retrieved by lexical pipeline
+                    </span>
+                  </>
+                )}
               </div>
+              {/* Vector rank */}
               <div className="detail-rail__score-row">
                 <span className="detail-rail__score-type">Vector rank</span>
-                <span className="detail-rail__score-badge detail-rail__score-badge--match">MATCH</span>
-                <span className="detail-rail__score-rank">#4</span>
-                <span className="detail-rail__score-value">0.891</span>
+                <span className="detail-rail__score-badge detail-rail__score-badge--cosine">cosine</span>
+                {resultInfo?.vectorRank != null ? (
+                  <>
+                    <span className="detail-rail__score-rank">#{resultInfo.vectorRank}</span>
+                    <span className="detail-rail__score-value">{resultInfo.vectorScore?.toFixed(3)}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="detail-rail__score-rank detail-rail__score-rank--empty">—</span>
+                    <span className="detail-rail__score-value detail-rail__score-value--empty">
+                      not retrieved by vector pipeline
+                    </span>
+                  </>
+                )}
               </div>
+              {/* Fused rank */}
               <div className="detail-rail__score-row">
                 <span className="detail-rail__score-type">Fused rank</span>
                 <span className="detail-rail__score-badge detail-rail__score-badge--rrf">RRF</span>
-                <span className="detail-rail__score-rank">#1</span>
-                <span className="detail-rail__score-value">0.947</span>
+                <span className="detail-rail__score-rank">#{resultInfo?.fusedRank || '—'}</span>
+                <span className="detail-rail__score-value">{resultInfo?.fusedScore?.toFixed(3) || '—'}</span>
               </div>
             </div>
 
@@ -330,84 +518,45 @@ export default function DetailShell() {
               three different scales — compare ranks, not scores
             </div>
 
-            {/* Highlighted Match - Lexical */}
-            <div className="detail-rail__highlight-block">
-              <div className="detail-rail__highlight-text">
-                ... since Monday, <span className="detail-rail__hl detail-rail__hl--lexical">Contractor bore work</span> active in the area
+            {/* Highlighted Match - Lexical (only if we found a verbatim match) */}
+            {lexicalHighlight && (
+              <div className="detail-rail__highlight-block">
+                <div className="detail-rail__highlight-text">
+                  {lexicalHighlight.prefix}{lexicalHighlight.beforeMatch}
+                  <span className="detail-rail__hl detail-rail__hl--lexical">{lexicalHighlight.match}</span>
+                  {lexicalHighlight.afterMatch}{lexicalHighlight.suffix}
+                </div>
+                <div className="detail-rail__highlight-source">
+                  highlight from Search · lexical pipeline
+                </div>
               </div>
-              <div className="detail-rail__highlight-source">
-                highlight from Search · lexical pipeline
-              </div>
-            </div>
+            )}
 
-            {/* Highlighted Match - Rerank */}
-            <div className="detail-rail__highlight-block">
-              <div className="detail-rail__highlight-text">
-                <span className="detail-rail__hl detail-rail__hl--rerank">Optical power collapsed on PON 1/3/4 off OLT-MCA-07</span>
+            {/* Highlighted Match - Rerank (only if we found a match) */}
+            {rerankHighlight && (
+              <div className="detail-rail__highlight-block">
+                <div className="detail-rail__highlight-text">
+                  <span className="detail-rail__hl detail-rail__hl--rerank">{rerankHighlight}</span>
+                </div>
+                <div className="detail-rail__highlight-source">
+                  top scoring chunk · rerank-2.5
+                </div>
               </div>
-              <div className="detail-rail__highlight-source">
-                top scoring chunk · rerank-2.5
-              </div>
-            </div>
+            )}
 
             <div className="detail-rail__match-footer">
               Dense vector scores are document-level. Span attribution comes from lexical pipeline or the reranker.
             </div>
           </div>
 
-          {/* Service Issue */}
+          {/* Service Issue - Dynamic fields */}
           <div className="detail-rail__section">
             <div className="detail-rail__section-title">SERVICE ISSUE</div>
             <div className="detail-rail__fields">
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">type</span>
-                <span className="detail-rail__field-value">{incident.serviceIssue?.type || 'fiber'}</span>
-              </div>
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">issue</span>
-                <span className="detail-rail__field-value">light-level-low</span>
-              </div>
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">symptoms</span>
-                <span className="detail-rail__field-value detail-rail__field-value--wrap">
-                  light-level-low, fiber-cut, third-party-dig
-                </span>
-              </div>
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">wfid</span>
-                <span className="detail-rail__field-value">OLT-MCA-07</span>
-              </div>
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">popPort</span>
-                <span className="detail-rail__field-value">1/3/4</span>
-              </div>
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">opticalPowerDbm</span>
-                <span className="detail-rail__field-value">
-                  -31.4 <span className="detail-rail__field-expected">(expected)</span>
-                </span>
-              </div>
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">siteDistanceKm</span>
-                <span className="detail-rail__field-value">SE-MCA-2211</span>
-              </div>
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">atSiteDistanceKm</span>
-                <span className="detail-rail__field-value">1840</span>
-              </div>
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">impact</span>
-                <span className="detail-rail__field-value">
-                  {incident.serviceIssue?.impact?.count || 340} subscribers × segment
-                </span>
-              </div>
-              <div className="detail-rail__field">
-                <span className="detail-rail__field-label">reportedBy</span>
-                <span className="detail-rail__field-value">alarm</span>
-              </div>
+              {renderServiceIssueFields()}
             </div>
             <div className="detail-rail__fields-note">
-              structured fields are prelifiers, not embedded
+              structured fields are prefilters, not embedded
             </div>
           </div>
         </div>
@@ -436,7 +585,7 @@ export default function DetailShell() {
           <div className="detail-center__legend">
             <span className="detail-center__legend-arrow">→</span>
             <span className="detail-center__legend-text">
-              8 nearest neighbours · arc weight = similarity
+              {incidentNeighbours.length} nearest neighbours · arc weight = similarity
             </span>
           </div>
         </div>
@@ -459,7 +608,7 @@ export default function DetailShell() {
             className={`detail-center__tab ${activeEvidenceTab === 'media' ? 'detail-center__tab--active' : ''}`}
             onClick={() => setActiveEvidenceTab('media')}
           >
-            Media · 3 artifacts
+            Media · {(incident.media?.length || 0) + SAMPLE_IMAGES.length + SAMPLE_VIDEOS.length + SAMPLE_DOCUMENTS.length} artifacts
           </button>
         </div>
       </main>
@@ -473,59 +622,82 @@ export default function DetailShell() {
           {/* Nearest Neighbours Header */}
           <div className="detail-context__header">
             <span className="detail-context__title">NEAREST NEIGHBOURS</span>
-            <span className="detail-context__count">· 8</span>
+            <span className="detail-context__count">· {incidentNeighbours.length}</span>
           </div>
 
-          {/* Neighbours List */}
+          {/* Neighbours List - from data */}
           <div className="detail-context__neighbours">
-          {[
-            { id: 'INC-2026-8712', type: 'fiber', location: 'Leesville, GA', score: 0.91 },
-            { id: 'INC-2026-8455', type: 'construction', location: 'Loco Hills, NM', score: 0.88 },
-            { id: 'INC-2026-8303', type: 'fiber', location: 'Terry, MS', score: 0.86 },
-            { id: 'INC-2026-7991', type: 'backhaul', location: 'Swifton, AR', score: 0.84 },
-            { id: 'INC-2026-7744', type: 'fiber', location: 'Perham, MN', score: 0.83 },
-          ].map((n, idx) => (
-            <div key={n.id} className="detail-context__neighbour">
-              <span
-                className="detail-context__neighbour-dot"
-                style={{ backgroundColor: CATEGORY_COLORS[getCategoryFromType(n.type)] }}
-              />
-              <span className="detail-context__neighbour-id">{n.id}</span>
-              <span className="detail-context__neighbour-type">{n.type}</span>
-              <span className="detail-context__neighbour-location">{n.location}</span>
-              <span className="detail-context__neighbour-score">{n.score.toFixed(2)}</span>
-            </div>
-          ))}
-          <div className="detail-context__more">
-            + 3 more
+            {incidentNeighbours.slice(0, 5).map((n) => (
+              <div
+                key={n.ticketRef}
+                className="detail-context__neighbour"
+                onClick={() => navigate(`/incident/${n.ticketRef}`)}
+                style={{ cursor: 'pointer' }}
+              >
+                <span
+                  className="detail-context__neighbour-dot"
+                  style={{ backgroundColor: CATEGORY_COLORS[n.category] }}
+                />
+                <span className="detail-context__neighbour-id">{n.ticketRef}</span>
+                <span className="detail-context__neighbour-type">{n.type}</span>
+                <span className="detail-context__neighbour-location">{n.city}</span>
+                <span className="detail-context__neighbour-score">{n.similarity?.toFixed(2)}</span>
+              </div>
+            ))}
+            {incidentNeighbours.length > 5 && (
+              <div className="detail-context__more">
+                + {incidentNeighbours.length - 5} more
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Neighbour Footer */}
-        <div className="detail-context__neighbour-footer">
-          <span>Based on 8 nearest historical incidents</span>
-          <button className="detail-context__show-map">Show on map</button>
-        </div>
+          {/* Neighbour Footer */}
+          <div className="detail-context__neighbour-footer">
+            <span>Based on {incidentNeighbours.length} nearest historical incidents</span>
+            <button className="detail-context__show-map">Show on map</button>
+          </div>
 
-        {/* Predicted Dispatch */}
-        <div className="detail-context__section">
-          <div className="detail-context__section-title">PREDICTED DISPATCH</div>
-          <div className="detail-context__dispatch">
-            <div className="detail-context__dispatch-main">
-              splice crew · 2 techs · 4.2h (2.8–5.1) · 1 truck roll
-            </div>
-            <div className="detail-context__dispatch-params">
-              Params: 48ct-ribbon, splice-enclosure-SE-12
-            </div>
-            <div className="detail-context__dispatch-cost">
-              Est. cost <span className="detail-context__dispatch-amount">$3,840</span>
-              <span className="detail-context__dispatch-range"> (±$1,120)</span>
-            </div>
-            <div className="detail-context__dispatch-note">
-              k=8 agreement 0.79 · retrieval, not a trained model
+          {/* Predicted Dispatch */}
+          <div className="detail-context__section">
+            <div className="detail-context__section-title">PREDICTED DISPATCH</div>
+            <div className="detail-context__dispatch">
+              {(() => {
+                // Compute predicted dispatch from neighbours
+                const crews = incidentNeighbours.map(n => n.resolution?.crew).filter(Boolean);
+                const mostCommonCrew = crews.length ? crews.sort((a, b) =>
+                  crews.filter(v => v === a).length - crews.filter(v => v === b).length
+                ).pop() : 'splice';
+                const techs = incidentNeighbours.map(n => n.resolution?.techs).filter(t => t != null);
+                const avgTechs = techs.length ? Math.round(techs.reduce((a, b) => a + b, 0) / techs.length) : 2;
+                const hours = incidentNeighbours.map(n => n.resolution?.hours).filter(h => h != null);
+                const avgHours = hours.length ? (hours.reduce((a, b) => a + b, 0) / hours.length).toFixed(1) : null;
+                const costs = incidentNeighbours.map(n => n.resolution?.costUsd).filter(c => c != null);
+                const avgCost = costs.length ? Math.round(costs.reduce((a, b) => a + b, 0) / costs.length) : null;
+                const parts = [...new Set(incidentNeighbours.flatMap(n => n.resolution?.parts || []))].slice(0, 3);
+
+                return (
+                  <>
+                    <div className="detail-context__dispatch-main">
+                      {mostCommonCrew} crew · {avgTechs} techs{avgHours ? ` · ${avgHours}h` : ''} · 1 truck roll
+                    </div>
+                    {parts.length > 0 && (
+                      <div className="detail-context__dispatch-params">
+                        Parts: {parts.join(', ')}
+                      </div>
+                    )}
+                    {avgCost && (
+                      <div className="detail-context__dispatch-cost">
+                        Est. cost <span className="detail-context__dispatch-amount">${avgCost.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="detail-context__dispatch-note">
+                      k={incidentNeighbours.length} agreement · retrieval, not a trained model
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
-        </div>
         </div>{/* End scroll area */}
 
         {/* Media Section */}

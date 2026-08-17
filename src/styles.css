@@ -3555,19 +3555,19 @@ body {
   text-align: center;
 }
 
-.detail-rail__score-badge--multi {
-  background: rgba(167, 139, 250, 0.25);
-  color: #A78BFA;
+.detail-rail__score-badge--bm25 {
+  background: rgba(14, 155, 196, 0.25);
+  color: var(--state-lexical);
 }
 
-.detail-rail__score-badge--match {
-  background: rgba(0, 237, 100, 0.25);
-  color: var(--mdb-green);
+.detail-rail__score-badge--cosine {
+  background: rgba(34, 211, 238, 0.25);
+  color: var(--state-semantic);
 }
 
 .detail-rail__score-badge--rrf {
-  background: rgba(148, 163, 184, 0.25);
-  color: var(--text-secondary);
+  background: rgba(165, 243, 252, 0.25);
+  color: var(--state-hybrid);
 }
 
 .detail-rail__score-rank {
@@ -3585,6 +3585,33 @@ body {
   color: var(--text-muted);
   width: 40px;
   text-align: right;
+}
+
+/* Empty state for null scores - hatched/dashed appearance */
+.detail-rail__score-rank--empty {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.detail-rail__score-value--empty {
+  font-family: Inter, sans-serif;
+  font-size: 9px;
+  font-style: italic;
+  color: var(--text-muted);
+  opacity: 0.6;
+  width: auto;
+  flex: 1;
+  text-align: right;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 2px,
+    rgba(90, 102, 114, 0.15) 2px,
+    rgba(90, 102, 114, 0.15) 4px
+  );
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-left: 8px;
 }
 
 .detail-rail__score-note {
