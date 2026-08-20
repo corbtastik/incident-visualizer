@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { CAT_COLOR } from '../layers';
 
 // Convert RGBA array to CSS
@@ -12,6 +12,8 @@ function contrastFor([r = 0, g = 0, b = 0]) {
   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
   return yiq >= 150 ? '#001E2B' : '#F8FAFC';
 }
+
+const DEFAULT_HEIGHT = Math.round(window.innerHeight / 3);
 
 function ResultRow({ result }) {
   const category = result?.serviceIssue?.category;
@@ -60,8 +62,44 @@ function ResultRow({ result }) {
 }
 
 export default function SearchResults({ query, results, onClose }) {
+  const [height, setHeight] = useState(DEFAULT_HEIGHT);
+  const isDragging = useRef(false);
+  const startY = useRef(0);
+  const startHeight = useRef(0);
+
+  const handleMouseDown = useCallback((e) => {
+    isDragging.current = true;
+    startY.current = e.clientY;
+    startHeight.current = height;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  }, [height]);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging.current) return;
+      const delta = startY.current - e.clientY;
+      const newHeight = Math.max(150, Math.min(window.innerHeight - 100, startHeight.current + delta));
+      setHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
   return (
-    <div className="bottom-dock">
+    <div className="bottom-dock" style={{ height: `${height}px` }}>
+      <div className="sr-resize-handle" onMouseDown={handleMouseDown} />
       <div className="bottom-dock__panel">
         <div className="sr-header">
           <span className="sr-title">Search Results</span>
