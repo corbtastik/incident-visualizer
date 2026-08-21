@@ -51,6 +51,7 @@ export default function App() {
   const [hoverInfo, setHoverInfo] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null); // null = closed, [] = no results
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Feeds (one hook per category)
   const businessFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'business',       intervalMs: 2000, pageSize: 200, cap: 8000 });
@@ -130,7 +131,8 @@ export default function App() {
     if (!query || query.trim().length === 0) return;
 
     setSearchQuery(query);
-    setSearchResults([]); // Show panel with loading state
+    setSearchResults([]);
+    setSearchLoading(true);
 
     try {
       const response = await fetch(`${API_BASE}/search`, {
@@ -148,6 +150,8 @@ export default function App() {
     } catch (err) {
       console.error('Search error:', err);
       setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -173,6 +177,7 @@ export default function App() {
         <SearchResults
           query={searchQuery}
           results={searchResults}
+          loading={searchLoading}
           onClose={handleCloseResults}
         />
       )}

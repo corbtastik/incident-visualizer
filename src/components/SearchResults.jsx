@@ -61,7 +61,7 @@ function ResultRow({ result }) {
   );
 }
 
-export default function SearchResults({ query, results, onClose }) {
+export default function SearchResults({ query, results, loading, onClose }) {
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
   const isDragging = useRef(false);
   const startY = useRef(0);
@@ -104,11 +104,16 @@ export default function SearchResults({ query, results, onClose }) {
         <div className="sr-header">
           <span className="sr-title">Search Results</span>
           <span className="sr-query">"{query}"</span>
-          <span className="sr-count">{results.length} results</span>
+          <span className="sr-count">{loading ? 'Searching...' : `${results.length} results`}</span>
           <button className="sr-close" onClick={onClose} title="Close">×</button>
         </div>
         <div className="sr-body">
-          {results.length === 0 ? (
+          {loading ? (
+            <div className="sr-loading">
+              <div className="sr-loading__spinner" />
+              <span>Searching incidents...</span>
+            </div>
+          ) : results.length === 0 ? (
             <div className="sr-empty">No results found</div>
           ) : (
             <div className="sr-list">
