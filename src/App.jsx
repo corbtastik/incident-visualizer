@@ -55,7 +55,7 @@ export default function App() {
   const [viewState, setViewState] = useState({
     longitude: -98,
     latitude: 39,
-    zoom: 3,
+    zoom: 4,
     pitch: 0,
     bearing: 0,
   });
@@ -74,7 +74,7 @@ export default function App() {
     setViewState({
       longitude: -98,
       latitude: 39,
-      zoom: 3,
+      zoom: 4,
       pitch: 0,
       bearing: 0,
       transitionDuration: 1000,
