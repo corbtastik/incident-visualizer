@@ -54,7 +54,7 @@ export default function App() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [viewState, setViewState] = useState({
     longitude: -98,
-    latitude: 36,
+    latitude: 33,
     zoom: 4,
     pitch: 0,
     bearing: 0,
@@ -73,7 +73,7 @@ export default function App() {
   const resetView = useCallback(() => {
     setViewState({
       longitude: -98,
-      latitude: 36,
+      latitude: 33,
       zoom: 4,
       pitch: 0,
       bearing: 0,
