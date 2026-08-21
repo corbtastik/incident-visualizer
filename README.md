@@ -50,7 +50,7 @@ cp .env.example .env
 npm run dev
 ```
 
-The UI will start on `http://localhost:5173`.
+The UI will start on `http://localhost:5174`.
 
 ---
 
@@ -128,7 +128,7 @@ VITE_MAPTILER_KEY=<your_maptiler_api_key>   # optional, for MapLibre styles
    cd simulator/server
    npm run dev
    ```
-2. Open the Visualizer at `http://localhost:5173`.
+2. Open the Visualizer at `http://localhost:5174`.
 3. In the left panel, adjust **Incidents/sec**, **Batch size**, and **Spread** via the simulator UI.
 4. Watch the map update live — new colored incidents appear across U.S. cities.
 5. Optionally enable **repair mode** in the simulator to watch points resolve and disappear.
