@@ -70,6 +70,17 @@ export default function App() {
     }));
   }, []);
 
+  const resetView = useCallback(() => {
+    setViewState({
+      longitude: -98,
+      latitude: 39,
+      zoom: 3,
+      pitch: 0,
+      bearing: 0,
+      transitionDuration: 1000,
+    });
+  }, []);
+
   // Feeds (one hook per category)
   const businessFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'business',       intervalMs: 2000, pageSize: 200, cap: 8000 });
   const consumerFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'consumer',       intervalMs: 2000, pageSize: 200, cap: 8000 });
@@ -191,7 +202,7 @@ export default function App() {
   return (
     <div className="map-root">
       <SearchBar onSearch={handleSearch} />
-      <ControlPanel state={state} setState={setState} />
+      <ControlPanel state={state} setState={setState} onResetView={resetView} />
 
       <div className="bottom-pills">
         <span className="pill">
