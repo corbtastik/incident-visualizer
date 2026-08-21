@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import { MongoClient } from "mongodb";
 import makeLiveRouter from "./routes/live.js";
+import makeSearchRouter from "./routes/search.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || "incidents";
@@ -100,6 +101,9 @@ async function main() {
 
   // ---- Live endpoints (/live/infrastructure, /live/business, ...) ----
   app.use(makeLiveRouter({ getDb }));
+
+  // ---- Search endpoint (/search) ----
+  app.use(makeSearchRouter({ getDb }));
 
   // ---- Listen ----
   app.listen(PORT, () =>

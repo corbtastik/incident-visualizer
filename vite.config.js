@@ -6,7 +6,8 @@ export default defineConfig({
   server: {
     port: 5174,
     proxy: {
-      "/live": "http://localhost:4000"
+      "/live": "http://localhost:4000",
+      "/search": "http://localhost:4000"
     }
   }
 });

@@ -126,20 +126,29 @@ export default function App() {
 
   const styleUrl = state.baseMap === 'dark' ? DARK : LIGHT;
 
-  const handleSearch = (query) => {
+  const handleSearch = async (query) => {
+    if (!query || query.trim().length === 0) return;
+
     setSearchQuery(query);
-    // Mock results for now - replace with actual semantic search API call
-    const mockResults = [
-      { _id: '1', incidentId: 'INC-2024-001', city: 'Austin', serviceIssue: { category: 'business', type: 'enterprise' }, score: 0.923, narrative: 'Enterprise customer reporting significant bandwidth degradation. Contracted 10Gbps dedicated line measuring only 2.3Gbps during peak hours. SLA breach confirmed, escalation required.' },
-      { _id: '2', incidentId: 'INC-2024-002', city: 'Denver', serviceIssue: { category: 'consumer', type: 'broadband' }, score: 0.891, narrative: 'Residential customer experiencing intermittent connectivity issues. Speed tests showing 40% of advertised speeds. Modem logs indicate frequent upstream channel bonding failures.' },
-      { _id: '3', incidentId: 'INC-2024-003', city: 'Seattle', serviceIssue: { category: 'infrastructure', type: 'backhaul' }, score: 0.856, narrative: 'Fiber backhaul link between SE-SEA-4401 and SE-SEA-4402 showing elevated error rates. OTDR testing reveals potential splice degradation at 4.2km marker. Capacity reduced to 60%.' },
-      { _id: '4', incidentId: 'INC-2024-004', city: 'Phoenix', serviceIssue: { category: 'emerging_tech', type: 'smart-city' }, score: 0.834, narrative: 'Smart traffic management system losing connectivity to 23 intersection controllers. Latency spikes exceeding 500ms causing signal synchronization failures during rush hour.' },
-      { _id: '5', incidentId: 'INC-2024-005', city: 'Miami', serviceIssue: { category: 'federal', type: 'firstnet' }, score: 0.812, narrative: 'FirstNet priority users reporting degraded service quality during emergency response operation. Band 14 coverage gaps identified in coastal zones. Public safety impact assessment initiated.' },
-      { _id: '6', incidentId: 'INC-2024-006', city: 'Chicago', serviceIssue: { category: 'business', type: 'voip' }, score: 0.798, narrative: 'VoIP service quality degradation affecting call center operations. Jitter exceeding 30ms and packet loss at 2.4%. MOS scores dropped below acceptable threshold of 3.5.' },
-      { _id: '7', incidentId: 'INC-2024-007', city: 'Portland', serviceIssue: { category: 'consumer', type: 'fiber' }, score: 0.776, narrative: 'FTTH customer reporting complete service outage. ONT showing LOS alarm. Field tech dispatched, preliminary assessment indicates damaged drop cable from recent storm activity.' },
-      { _id: '8', incidentId: 'INC-2024-008', city: 'Atlanta', serviceIssue: { category: 'infrastructure', type: 'datacenter' }, score: 0.754, narrative: 'Datacenter interconnect experiencing packet loss on primary path. BGP route flapping detected between peering routers. Failover to secondary path completed but capacity constrained.' },
-    ];
-    setSearchResults(mockResults);
+    setSearchResults([]); // Show panel with loading state
+
+    try {
+      const response = await fetch(`${API_BASE}/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query.trim(), limit: 20 }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSearchResults(data.results || []);
+    } catch (err) {
+      console.error('Search error:', err);
+      setSearchResults([]);
+    }
   };
 
   const handleCloseResults = () => {
