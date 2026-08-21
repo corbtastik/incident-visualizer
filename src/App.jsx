@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import DeckGL from '@deck.gl/react';
 import { Map } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
@@ -52,6 +52,23 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null); // null = closed, [] = no results
   const [searchLoading, setSearchLoading] = useState(false);
+  const [viewState, setViewState] = useState({
+    longitude: -98,
+    latitude: 39,
+    zoom: 3,
+    pitch: 0,
+    bearing: 0,
+  });
+
+  const zoomToLocation = useCallback((lat, lng) => {
+    setViewState(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      zoom: 12,
+      transitionDuration: 1000,
+    }));
+  }, []);
 
   // Feeds (one hook per category)
   const businessFeed       = useCategoryFeed({ baseUrl: API_BASE, category: 'business',       intervalMs: 2000, pageSize: 200, cap: 8000 });
@@ -179,12 +196,14 @@ export default function App() {
           results={searchResults}
           loading={searchLoading}
           onClose={handleCloseResults}
+          onZoom={zoomToLocation}
         />
       )}
 
       <div className="map-canvas">
         <DeckGL
-          initialViewState={{ longitude: -98, latitude: 39, zoom: 3 }}
+          viewState={viewState}
+          onViewStateChange={({ viewState }) => setViewState(viewState)}
           controller={true}
           layers={layers}
           getTooltip={null}
