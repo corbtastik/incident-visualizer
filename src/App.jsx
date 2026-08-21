@@ -127,10 +127,11 @@ export default function App() {
   }, [dataForRender, radiusPx, state.types, state.categories, nowTick]);
 
   // Build search result pin layers (only when results are visible)
+  // Size scales proportionally with live incident radius
   const searchLayers = useMemo(() => {
     if (!searchResults || searchResults.length === 0) return [];
-    return makeSearchResultLayers(searchResults, { nowTick });
-  }, [searchResults, nowTick]);
+    return makeSearchResultLayers(searchResults, { radiusPx, nowTick });
+  }, [searchResults, radiusPx, nowTick]);
 
   // Combine all layers: live incidents + search pins on top
   const layers = useMemo(() => {

@@ -122,12 +122,19 @@ export function makeCategoryScatterLayers(
 /**
  * Build layers for search result pins.
  * Creates a "target" visual: outer pulsing ring + center dot.
+ * Sizes scale proportionally with radiusPx (the live incident dot size).
  * @param results  Array of search results with lat, lng, serviceIssue.category
- * @param opts     { nowTick }
+ * @param opts     { radiusPx, nowTick }
  * @returns Array of layers (ring layer + dot layer)
  */
-export function makeSearchResultLayers(results, { nowTick = 0 } = {}) {
+export function makeSearchResultLayers(results, { radiusPx = 2, nowTick = 0 } = {}) {
   if (!results || results.length === 0) return [];
+
+  // Proportional sizing: ring ~6x live dot, center ~2x live dot
+  const ringBase = Math.max(6, radiusPx * 6);
+  const ringPulseRange = Math.max(2, radiusPx * 2);
+  const dotSize = Math.max(3, radiusPx * 2);
+  const lineWidth = Math.max(1.5, radiusPx * 1.2);
 
   // Pulse animation: gentle breathing effect (0.8 Hz)
   const t = nowTick / 1000;
@@ -140,16 +147,16 @@ export function makeSearchResultLayers(results, { nowTick = 0 } = {}) {
     pickable: true,
 
     radiusUnits: "pixels",
-    getRadius: () => 12 + 4 * pulse, // 12-16px pulsing
-    radiusMinPixels: 10,
-    radiusMaxPixels: 20,
+    getRadius: () => ringBase + ringPulseRange * pulse,
+    radiusMinPixels: 6,
+    radiusMaxPixels: ringBase * 2,
 
     getPosition: (d) => [d.lng, d.lat],
 
     filled: false,
     stroked: true,
     lineWidthUnits: "pixels",
-    getLineWidth: 2.5,
+    getLineWidth: lineWidth,
     getLineColor: (d) => {
       const cat = d?.serviceIssue?.category;
       const base = CAT_COLOR[cat] || [200, 200, 200, 200];
@@ -159,7 +166,8 @@ export function makeSearchResultLayers(results, { nowTick = 0 } = {}) {
     parameters: { depthTest: false },
 
     updateTriggers: {
-      getRadius: nowTick,
+      getRadius: [nowTick, radiusPx],
+      getLineWidth: radiusPx,
     },
   });
 
@@ -170,9 +178,9 @@ export function makeSearchResultLayers(results, { nowTick = 0 } = {}) {
     pickable: true,
 
     radiusUnits: "pixels",
-    getRadius: 4,
-    radiusMinPixels: 3,
-    radiusMaxPixels: 6,
+    getRadius: dotSize,
+    radiusMinPixels: 2,
+    radiusMaxPixels: dotSize * 2,
 
     getPosition: (d) => [d.lng, d.lat],
 
@@ -185,6 +193,10 @@ export function makeSearchResultLayers(results, { nowTick = 0 } = {}) {
     },
 
     parameters: { depthTest: false },
+
+    updateTriggers: {
+      getRadius: radiusPx,
+    },
   });
 
   return [ringLayer, dotLayer];
