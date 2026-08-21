@@ -118,3 +118,74 @@ export function makeCategoryScatterLayers(
     });
   });
 }
+
+/**
+ * Build layers for search result pins.
+ * Creates a "target" visual: outer pulsing ring + center dot.
+ * @param results  Array of search results with lat, lng, serviceIssue.category
+ * @param opts     { nowTick }
+ * @returns Array of layers (ring layer + dot layer)
+ */
+export function makeSearchResultLayers(results, { nowTick = 0 } = {}) {
+  if (!results || results.length === 0) return [];
+
+  // Pulse animation: gentle breathing effect (0.8 Hz)
+  const t = nowTick / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(2 * Math.PI * 0.8 * t);
+
+  // Outer ring layer - stroked, pulsing size
+  const ringLayer = new ScatterplotLayer({
+    id: "search-pins-ring",
+    data: results,
+    pickable: true,
+
+    radiusUnits: "pixels",
+    getRadius: () => 12 + 4 * pulse, // 12-16px pulsing
+    radiusMinPixels: 10,
+    radiusMaxPixels: 20,
+
+    getPosition: (d) => [d.lng, d.lat],
+
+    filled: false,
+    stroked: true,
+    lineWidthUnits: "pixels",
+    getLineWidth: 2.5,
+    getLineColor: (d) => {
+      const cat = d?.serviceIssue?.category;
+      const base = CAT_COLOR[cat] || [200, 200, 200, 200];
+      return [base[0], base[1], base[2], 255]; // full opacity for ring
+    },
+
+    parameters: { depthTest: false },
+
+    updateTriggers: {
+      getRadius: nowTick,
+    },
+  });
+
+  // Center dot layer - filled, static
+  const dotLayer = new ScatterplotLayer({
+    id: "search-pins-dot",
+    data: results,
+    pickable: true,
+
+    radiusUnits: "pixels",
+    getRadius: 4,
+    radiusMinPixels: 3,
+    radiusMaxPixels: 6,
+
+    getPosition: (d) => [d.lng, d.lat],
+
+    filled: true,
+    stroked: false,
+    getFillColor: (d) => {
+      const cat = d?.serviceIssue?.category;
+      const base = CAT_COLOR[cat] || [200, 200, 200, 200];
+      return [base[0], base[1], base[2], 255];
+    },
+
+    parameters: { depthTest: false },
+  });
+
+  return [ringLayer, dotLayer];
+}

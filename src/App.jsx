@@ -9,7 +9,7 @@ import LiveFeeds from './components/LiveFeeds.jsx';
 import SearchBar from './components/SearchBar.jsx';
 import SearchResults from './components/SearchResults.jsx';
 import { useCategoryFeed } from './hooks/useCategoryFeed';
-import { makeCategoryScatterLayers } from './layers/index.js';
+import { makeCategoryScatterLayers, makeSearchResultLayers } from './layers/index.js';
 import TooltipIncident from './components/TooltipIncident.jsx';
 
 const DARK =
@@ -113,7 +113,7 @@ export default function App() {
   ]);
 
   // Build layers with per-category render data and meta
-  const layers = useMemo(() => {
+  const liveLayers = useMemo(() => {
     return makeCategoryScatterLayers(
       {
         business:       dataForRender.business,
@@ -125,6 +125,17 @@ export default function App() {
       { radiusPx, types: state.types, categories: state.categories, nowTick, demoMetaByCat }
     );
   }, [dataForRender, radiusPx, state.types, state.categories, nowTick]);
+
+  // Build search result pin layers (only when results are visible)
+  const searchLayers = useMemo(() => {
+    if (!searchResults || searchResults.length === 0) return [];
+    return makeSearchResultLayers(searchResults, { nowTick });
+  }, [searchResults, nowTick]);
+
+  // Combine all layers: live incidents + search pins on top
+  const layers = useMemo(() => {
+    return [...liveLayers, ...searchLayers];
+  }, [liveLayers, searchLayers]);
 
   // Visible count: reflect whichever source each category uses
   const visibleCount = useMemo(() => {
