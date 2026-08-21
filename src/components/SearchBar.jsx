@@ -8,6 +8,10 @@ export default function SearchBar({ onSearch }) {
     if (onSearch) onSearch(query);
   };
 
+  const handleClear = () => {
+    setQuery('');
+  };
+
   return (
     <div className="top-dock">
       <form className="top-dock__panel" onSubmit={handleSubmit}>
@@ -18,6 +22,11 @@ export default function SearchBar({ onSearch }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        {query && (
+          <button type="button" className="search-clear" onClick={handleClear} title="Clear">
+            ×
+          </button>
+        )}
         <button type="submit" className="search-button">
           Search
         </button>

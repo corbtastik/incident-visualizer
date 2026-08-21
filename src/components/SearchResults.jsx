@@ -44,7 +44,7 @@ function ResultRow({ result }) {
           <span className="sr-row__label">Category:</span> {category || '—'}
         </span>
         <span className="sr-row__field">
-          <span className="sr-row__label">ID:</span> {result.incidentId || result._id || '—'}
+          <span className="sr-row__label">ID:</span> {result.serviceIssue?.ticketRef || result._id || '—'}
         </span>
         {result.score !== undefined && (
           <span className="sr-row__field sr-row__score">
@@ -52,9 +52,9 @@ function ResultRow({ result }) {
           </span>
         )}
       </div>
-      {result.narrative && (
+      {(result.serviceIssue?.narrative || result.narrative) && (
         <div className="sr-row__narrative">
-          <span className="sr-row__label">Narrative:</span> {result.narrative}
+          <span className="sr-row__label">Narrative:</span> {result.serviceIssue?.narrative || result.narrative}
         </div>
       )}
     </div>
