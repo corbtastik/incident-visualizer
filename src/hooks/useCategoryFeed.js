@@ -47,6 +47,8 @@ export function useCategoryFeed({
   const [status, setStatus] = useState("idle"); // "idle" | "ok" | "error"
   const [error, setError] = useState(null);
   const [count, setCount] = useState(0);
+  const [repairsStartedCount, setRepairsStartedCount] = useState(0);
+  const [repairsCompletedCount, setRepairsCompletedCount] = useState(0);
   const [lastEvent, setLastEvent] = useState(null);
   const [data, setData] = useState([]); // rolling buffer for map layers
 
@@ -140,6 +142,11 @@ export function useCategoryFeed({
             const repairStartedEvents = docs.filter(d => d?.type === "repair_started");
             const resolutions = docs.filter(d => d?.type === "resolution");
 
+            // Debug: log document type counts
+            if (repairStartedEvents.length > 0 || resolutions.length > 0) {
+              console.log(`[${category}] docs: ${docs.length}, incidents: ${incidents.length}, repair_started: ${repairStartedEvents.length}, resolutions: ${resolutions.length}`);
+            }
+
             // update Live Feeds counters (count incidents only for consistency)
             setCount((c) => c + incidents.length);
             const lastIncident = incidents[incidents.length - 1] || null;
@@ -162,6 +169,9 @@ export function useCategoryFeed({
               }
 
               // Process repair_started events - START blinking
+              if (repairStartedEvents.length > 0) {
+                setRepairsStartedCount(c => c + repairStartedEvents.length);
+              }
               for (const evt of repairStartedEvents) {
                 const incId = evt.incidentId;
                 const id = typeof incId === "string" ? incId : incId?.$oid || String(incId);
@@ -184,6 +194,9 @@ export function useCategoryFeed({
               }
 
               // Process resolutions - STOP blinking and remove
+              if (resolutions.length > 0) {
+                setRepairsCompletedCount(c => c + resolutions.length);
+              }
               for (const res of resolutions) {
                 const incId = res.incidentId;
                 const id = typeof incId === "string" ? incId : incId?.$oid || String(incId);
@@ -286,6 +299,8 @@ export function useCategoryFeed({
     status,            // "ok" | "idle" | "error"
     error,
     count,
+    repairsStartedCount,
+    repairsCompletedCount,
     lastEventPreview: toPreview(lastEvent),
     data,              // legacy consumers
 
