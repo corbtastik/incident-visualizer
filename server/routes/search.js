@@ -5,7 +5,7 @@ export default function makeSearchRouter({ getDb }) {
 
   router.post("/search", async (req, res) => {
     try {
-      const { query, limit = 10 } = req.body;
+      const { query, limit = 10, simRunId } = req.body;
 
       if (!query || typeof query !== "string" || query.trim().length === 0) {
         return res.status(400).json({ error: "Query is required" });
@@ -14,16 +14,24 @@ export default function makeSearchRouter({ getDb }) {
       const db = getDb();
       const coll = db.collection("incident_events");
 
-      const pipeline = [
-        {
-          $vectorSearch: {
-            index: "narrative_autoembed_index",
-            query: { text: query.trim() },
-            path: "serviceIssue.narrative",
-            numCandidates: Math.max(limit * 10, 100),
-            limit: Math.min(limit, 50),
-          },
+      // Build $vectorSearch stage with optional filter
+      const vectorSearchStage = {
+        $vectorSearch: {
+          index: "narrative_autoembed_index",
+          query: { text: query.trim() },
+          path: "serviceIssue.narrative",
+          numCandidates: Math.max(limit * 10, 100),
+          limit: Math.min(limit, 50),
         },
+      };
+
+      // Add filter for simRunId if provided (scopes search to current run)
+      if (simRunId && typeof simRunId === "string") {
+        vectorSearchStage.$vectorSearch.filter = { simRunId: simRunId };
+      }
+
+      const pipeline = [
+        vectorSearchStage,
         {
           $addFields: {
             score: { $meta: "vectorSearchScore" },
@@ -37,6 +45,7 @@ export default function makeSearchRouter({ getDb }) {
             lat: 1,
             lng: 1,
             ts: 1,
+            simRunId: 1,
             serviceIssue: 1,
             score: 1,
           },
@@ -47,6 +56,7 @@ export default function makeSearchRouter({ getDb }) {
 
       res.json({
         query: query.trim(),
+        simRunId: simRunId || null,
         count: results.length,
         results,
       });

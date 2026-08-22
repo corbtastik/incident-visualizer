@@ -52,6 +52,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null); // null = closed, [] = no results
   const [searchLoading, setSearchLoading] = useState(false);
+  const [currentRunOnly, setCurrentRunOnly] = useState(true); // scope search to current sim run
   const [viewState, setViewState] = useState({
     longitude: -98,
     latitude: 33,
@@ -89,6 +90,22 @@ export default function App() {
   const infraFeed          = useCategoryFeed({ baseUrl: API_BASE, category: 'infrastructure', intervalMs: 2000, pageSize: 200, cap: 8000 });
 
   const radiusPx = useMemo(() => uiToRadiusPx(state.radius), [state.radius]);
+
+  // Get current simRunId from any active feed (first non-null wins)
+  const currentSimRunId = useMemo(() => {
+    return businessFeed?.currentSimRunId ||
+           consumerFeed?.currentSimRunId ||
+           emergingTechFeed?.currentSimRunId ||
+           federalFeed?.currentSimRunId ||
+           infraFeed?.currentSimRunId ||
+           null;
+  }, [
+    businessFeed?.currentSimRunId,
+    consumerFeed?.currentSimRunId,
+    emergingTechFeed?.currentSimRunId,
+    federalFeed?.currentSimRunId,
+    infraFeed?.currentSimRunId
+  ]);
 
   // Animation tick for blink/grow (lightweight ~4 FPS). No effect unless demo is enabled.
   const [nowTick, setNowTick] = useState(() => Date.now());
@@ -203,10 +220,16 @@ export default function App() {
     setSearchLoading(true);
 
     try {
+      const body = { query: query.trim(), limit: 20 };
+      // Include simRunId filter if toggle is enabled and we have an active run
+      if (currentRunOnly && currentSimRunId) {
+        body.simRunId = currentSimRunId;
+      }
+
       const response = await fetch(`${API_BASE}/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query.trim(), limit: 20 }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -229,7 +252,12 @@ export default function App() {
 
   return (
     <div className="map-root">
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar
+        onSearch={handleSearch}
+        currentRunOnly={currentRunOnly}
+        onToggleCurrentRun={setCurrentRunOnly}
+        hasSimRunId={!!currentSimRunId}
+      />
       <ControlPanel state={state} setState={setState} onResetView={resetView} />
 
       <div className="bottom-pills">

@@ -51,6 +51,7 @@ export function useCategoryFeed({
   const [repairsCompletedCount, setRepairsCompletedCount] = useState(0);
   const [lastEvent, setLastEvent] = useState(null);
   const [data, setData] = useState([]); // rolling buffer for map layers
+  const [currentSimRunId, setCurrentSimRunId] = useState(null); // track active sim run
 
   const cursorRef = useRef(null);
   const timerRef = useRef(null);
@@ -150,7 +151,13 @@ export function useCategoryFeed({
             // update Live Feeds counters (count incidents only for consistency)
             setCount((c) => c + incidents.length);
             const lastIncident = incidents[incidents.length - 1] || null;
-            if (lastIncident) setLastEvent(lastIncident);
+            if (lastIncident) {
+              setLastEvent(lastIncident);
+              // Track current simRunId from latest incident
+              if (lastIncident.simRunId) {
+                setCurrentSimRunId(lastIncident.simRunId);
+              }
+            }
 
             // Process real repair events
             if (demoEnabled && !useFakeResolutions) {
@@ -303,6 +310,7 @@ export function useCategoryFeed({
     repairsCompletedCount,
     lastEventPreview: toPreview(lastEvent),
     data,              // legacy consumers
+    currentSimRunId,   // current simulation run ID (for scoped search)
 
     // Demo state for renderer/animation
     demo: {

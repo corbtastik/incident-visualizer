@@ -402,3 +402,31 @@ select {
 }
 
 /* Footer already exists as .rf-footer from earlier changes */
+
+/* Current run toggle in search bar */
+.current-run-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--muted);
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.current-run-toggle:hover {
+  color: var(--fg);
+}
+.current-run-toggle input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--blue);
+  cursor: pointer;
+}
+.current-run-toggle input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+.current-run-toggle .toggle-label {
+  font-weight: 500;
+}

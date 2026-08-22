@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function SearchBar({ onSearch }) {
+export default function SearchBar({ onSearch, currentRunOnly, onToggleCurrentRun, hasSimRunId }) {
   const [query, setQuery] = useState('');
 
   const handleSubmit = (e) => {
@@ -27,6 +27,19 @@ export default function SearchBar({ onSearch }) {
             ×
           </button>
         )}
+        <label
+          className="current-run-toggle"
+          title={hasSimRunId ? "Filter search to current simulation run" : "No active simulation run detected"}
+          style={{ opacity: hasSimRunId ? 1 : 0.5 }}
+        >
+          <input
+            type="checkbox"
+            checked={currentRunOnly}
+            onChange={(e) => onToggleCurrentRun?.(e.target.checked)}
+            disabled={!hasSimRunId}
+          />
+          <span className="toggle-label">Current run</span>
+        </label>
         <button type="submit" className="search-button">
           Search
         </button>
