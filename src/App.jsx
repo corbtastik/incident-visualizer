@@ -9,7 +9,7 @@ import LiveFeeds from './components/LiveFeeds.jsx';
 import SearchBar from './components/SearchBar.jsx';
 import SearchResults from './components/SearchResults.jsx';
 import { useCategoryFeed } from './hooks/useCategoryFeed';
-import { makeCategoryScatterLayers } from './layers/index.js';
+import { makeCategoryScatterLayers, makeSearchResultLayers } from './layers/index.js';
 import TooltipIncident from './components/TooltipIncident.jsx';
 
 const DARK =
@@ -54,8 +54,8 @@ export default function App() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [viewState, setViewState] = useState({
     longitude: -98,
-    latitude: 39,
-    zoom: 3,
+    latitude: 33,
+    zoom: 4,
     pitch: 0,
     bearing: 0,
   });
@@ -68,6 +68,17 @@ export default function App() {
       zoom: 12,
       transitionDuration: 1000,
     }));
+  }, []);
+
+  const resetView = useCallback(() => {
+    setViewState({
+      longitude: -98,
+      latitude: 33,
+      zoom: 4,
+      pitch: 0,
+      bearing: 0,
+      transitionDuration: 1000,
+    });
   }, []);
 
   // Feeds (one hook per category)
@@ -101,19 +112,47 @@ export default function App() {
 
   // Per-category demo metadata for blink/grow accessors
   const demoMetaByCat = useMemo(() => ({
-    business:       businessFeed?.demo?.enabled ? { enabled: true,  createdAtRef: businessFeed.demo.createdAtRef,       expiryAtRef: businessFeed.demo.expiryAtRef } : { enabled: false },
-    consumer:       consumerFeed?.demo?.enabled ? { enabled: true,  createdAtRef: consumerFeed.demo.createdAtRef,       expiryAtRef: consumerFeed.demo.expiryAtRef } : { enabled: false },
-    emerging_tech:  emergingTechFeed?.demo?.enabled ? { enabled: true,  createdAtRef: emergingTechFeed.demo.createdAtRef, expiryAtRef: emergingTechFeed.demo.expiryAtRef } : { enabled: false },
-    federal:        federalFeed?.demo?.enabled ? { enabled: true,  createdAtRef: federalFeed.demo.createdAtRef,        expiryAtRef: federalFeed.demo.expiryAtRef } : { enabled: false },
-    infrastructure: infraFeed?.demo?.enabled ? { enabled: true,  createdAtRef: infraFeed.demo.createdAtRef,           expiryAtRef: infraFeed.demo.expiryAtRef } : { enabled: false }
+    business: businessFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: businessFeed.demo.createdAtRef,
+      expiryAtRef: businessFeed.demo.expiryAtRef,
+      resolutionMapRef: businessFeed.demo.resolutionMapRef,
+      repairStartedAtRef: businessFeed.demo.repairStartedAtRef
+    } : { enabled: false },
+    consumer: consumerFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: consumerFeed.demo.createdAtRef,
+      expiryAtRef: consumerFeed.demo.expiryAtRef,
+      resolutionMapRef: consumerFeed.demo.resolutionMapRef,
+      repairStartedAtRef: consumerFeed.demo.repairStartedAtRef
+    } : { enabled: false },
+    emerging_tech: emergingTechFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: emergingTechFeed.demo.createdAtRef,
+      expiryAtRef: emergingTechFeed.demo.expiryAtRef,
+      resolutionMapRef: emergingTechFeed.demo.resolutionMapRef,
+      repairStartedAtRef: emergingTechFeed.demo.repairStartedAtRef
+    } : { enabled: false },
+    federal: federalFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: federalFeed.demo.createdAtRef,
+      expiryAtRef: federalFeed.demo.expiryAtRef,
+      resolutionMapRef: federalFeed.demo.resolutionMapRef,
+      repairStartedAtRef: federalFeed.demo.repairStartedAtRef
+    } : { enabled: false },
+    infrastructure: infraFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: infraFeed.demo.createdAtRef,
+      expiryAtRef: infraFeed.demo.expiryAtRef,
+      resolutionMapRef: infraFeed.demo.resolutionMapRef,
+      repairStartedAtRef: infraFeed.demo.repairStartedAtRef
+    } : { enabled: false }
   }), [
-    businessFeed?.demo?.enabled, consumerFeed?.demo?.enabled, emergingTechFeed?.demo?.enabled, federalFeed?.demo?.enabled, infraFeed?.demo?.enabled,
-    businessFeed?.demo?.createdAtRef, consumerFeed?.demo?.createdAtRef, emergingTechFeed?.demo?.createdAtRef, federalFeed?.demo?.createdAtRef, infraFeed?.demo?.createdAtRef,
-    businessFeed?.demo?.expiryAtRef, consumerFeed?.demo?.expiryAtRef, emergingTechFeed?.demo?.expiryAtRef, federalFeed?.demo?.expiryAtRef, infraFeed?.demo?.expiryAtRef
+    businessFeed?.demo, consumerFeed?.demo, emergingTechFeed?.demo, federalFeed?.demo, infraFeed?.demo
   ]);
 
   // Build layers with per-category render data and meta
-  const layers = useMemo(() => {
+  const liveLayers = useMemo(() => {
     return makeCategoryScatterLayers(
       {
         business:       dataForRender.business,
@@ -125,6 +164,18 @@ export default function App() {
       { radiusPx, types: state.types, categories: state.categories, nowTick, demoMetaByCat }
     );
   }, [dataForRender, radiusPx, state.types, state.categories, nowTick]);
+
+  // Build search result pin layers (only when results are visible)
+  // Size scales proportionally with live incident radius
+  const searchLayers = useMemo(() => {
+    if (!searchResults || searchResults.length === 0) return [];
+    return makeSearchResultLayers(searchResults, { radiusPx, nowTick });
+  }, [searchResults, radiusPx, nowTick]);
+
+  // Combine all layers: live incidents + search pins on top
+  const layers = useMemo(() => {
+    return [...liveLayers, ...searchLayers];
+  }, [liveLayers, searchLayers]);
 
   // Visible count: reflect whichever source each category uses
   const visibleCount = useMemo(() => {
@@ -179,7 +230,7 @@ export default function App() {
   return (
     <div className="map-root">
       <SearchBar onSearch={handleSearch} />
-      <ControlPanel state={state} setState={setState} />
+      <ControlPanel state={state} setState={setState} onResetView={resetView} />
 
       <div className="bottom-pills">
         <span className="pill">

@@ -54,7 +54,7 @@ function rgbaForText(rgba = []) {
   return `rgba(${r}, ${g}, ${b}, 1)`;
 }
 
-export default function ControlPanel({ state, setState }) {
+export default function ControlPanel({ state, setState, onResetView }) {
   const { layer, radius, baseMap, colorRamp, types, categories } = state;
 
   const flatByOrder = useMemo(() => GROUPS.flatMap(g => g.items), []);
@@ -113,6 +113,16 @@ export default function ControlPanel({ state, setState }) {
                 <option value="light">Light</option>
               </select>
             </label>
+
+            {onResetView && (
+              <button
+                type="button"
+                className="cp-reset-btn"
+                onClick={onResetView}
+              >
+                Center Map
+              </button>
+            )}
           </div>
 
           <Divider />

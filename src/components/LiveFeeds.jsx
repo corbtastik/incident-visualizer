@@ -122,6 +122,30 @@ function Donut({ parts }) {
   );
 }
 
+function Chevron({ expanded }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      style={{
+        transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+        transition: "transform 0.15s ease",
+        opacity: 0.6
+      }}
+    >
+      <path
+        d="M4.5 2.5L8 6L4.5 9.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function LiveFeeds({ apiBase }) {
   const cats = [
     { key: "business",       label: "Business",        color: rgb(CAT_COLOR.business) },
@@ -131,12 +155,21 @@ export default function LiveFeeds({ apiBase }) {
     { key: "infrastructure", label: "Infrastructure",  color: rgb(CAT_COLOR.infrastructure) },
   ];
 
+  // Track which categories are expanded (all collapsed by default)
+  const [expanded, setExpanded] = useState({});
+
+  const toggleExpand = (key) => {
+    setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const feeds = cats.map(c => ({
     ...c,
     hook: useCategoryFeed({ baseUrl: apiBase, category: c.key, intervalMs: 2000, pageSize: 200 })
   }));
 
   const total = feeds.reduce((s, f) => s + (f.hook.count || 0), 0);
+  const totalRepairsStarted = feeds.reduce((s, f) => s + (f.hook.repairsStartedCount || 0), 0);
+  const totalRepairsCompleted = feeds.reduce((s, f) => s + (f.hook.repairsCompletedCount || 0), 0);
   const pieParts = useMemo(
     () => feeds.map(f => ({ key: f.key, label: f.label, value: f.hook.count || 0, color: f.color })),
     [feeds]
@@ -155,8 +188,12 @@ export default function LiveFeeds({ apiBase }) {
         <div className="rf-scroll">
           {feeds.map(({ key, label, hook }) => (
             <div key={key} className="mb-3 last:mb-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
+              <div
+                className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-1 py-1 -mx-1 transition-colors"
+                onClick={() => toggleExpand(key)}
+              >
+                <div className="flex items-center gap-1">
+                  <Chevron expanded={expanded[key]} />
                   <Dot status={hook.status} />
                   <span className="text-sm">{label}</span>
                 </div>
@@ -164,7 +201,9 @@ export default function LiveFeeds({ apiBase }) {
                   Size: <span className="font-mono text-neutral-200">{hook.count}</span>
                 </div>
               </div>
-              <LastEventCard title="Last Event" doc={hook.lastEventPreview} />
+              {expanded[key] && (
+                <LastEventCard title="Last Event" doc={hook.lastEventPreview} />
+              )}
               {hook.status === "error" && (
                 <div className="mt-1 text-[11px] text-red-400">{hook.error}</div>
               )}
@@ -179,11 +218,25 @@ export default function LiveFeeds({ apiBase }) {
 
         {/* Footer (fixed) */}
         <div className="rf-footer">
-          <div className="group-title flex items-baseline gap-2">
-            <span>Total:</span>
-            <span className="font-semibold" style={{ color: "#ef4444" }}>
-              {total.toLocaleString()}
-            </span>
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="flex items-baseline justify-between">
+              <span className="text-neutral-400">Repairs Started:</span>
+              <span className="font-mono font-semibold text-amber-400">
+                {totalRepairsStarted.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-neutral-400">Repairs Completed:</span>
+              <span className="font-mono font-semibold text-green-400">
+                {totalRepairsCompleted.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between pt-1 border-t border-white/10">
+              <span className="text-neutral-400">Total:</span>
+              <span className="font-mono font-semibold" style={{ color: "#ef4444" }}>
+                {total.toLocaleString()}
+              </span>
+            </div>
           </div>
         </div>
       </div>
