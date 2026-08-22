@@ -36,7 +36,19 @@ function idOf(d) {
  * @param opts   { radiusPx, types, categories, nowTick?, demoMetaByCat? }
  *
  * demoMetaByCat:
- *   { [cat]: { enabled: boolean, createdAtRef?: Ref<Map>, expiryAtRef?: Ref<Map> } }
+ *   { [cat]: {
+ *       enabled: boolean,
+ *       createdAtRef?: Ref<Map>,       // Map<id, createdAtMs>
+ *       expiryAtRef?: Ref<Map>,        // Map<id, expiryAtMs (fixedAt)>
+ *       resolutionMapRef?: Ref<Map>,   // Map<incidentId, resolution>
+ *       repairStartedAtRef?: Ref<Map>  // Map<id, repairStartedAtMs>
+ *     }
+ *   }
+ *
+ * Animation logic:
+ * - For incidents WITH a resolution: blink entire repair window (repairStartedAt → fixedAt)
+ * - For incidents WITHOUT a resolution: show solid (no blink)
+ * - Blink rate: 2Hz normal, 6Hz in final 5% of repair window
  */
 export function makeCategoryScatterLayers(
   feeds,
@@ -52,18 +64,26 @@ export function makeCategoryScatterLayers(
 
     const getFillColor = demoEnabled
       ? (d) => {
-          // Blink only in the final 25% of lifespan
           const id = idOf(d);
-          const createdAt = meta.createdAtRef?.current.get(id);
-          const expiryAt  = meta.expiryAtRef?.current.get(id);
-          if (!createdAt || !expiryAt) return baseColor;
 
-          const span = Math.max(1, expiryAt - createdAt);
-          const p = Math.min(1, Math.max(0, (nowTick - createdAt) / span));
-          if (p < 0.75) return baseColor;
+          // Check repair status
+          const repairInfo = meta.resolutionMapRef?.current.get(id);
+          const isRepairing = repairInfo?.status === "repairing";
+          const repairStartedAt = meta.repairStartedAtRef?.current.get(id);
+          const expiryAt = meta.expiryAtRef?.current.get(id);
 
-          // Two-phase blink: 2 Hz then 6 Hz near the end
-          const rateHz = p < 0.95 ? 2 : 6;
+          // Only blink if actively being repaired
+          if (!isRepairing || !repairStartedAt || !expiryAt) {
+            return baseColor;
+          }
+
+          // Calculate progress through repair window (repairStartedAt → expectedFixAt)
+          const span = Math.max(1, expiryAt - repairStartedAt);
+          const p = Math.min(1, Math.max(0, (nowTick - repairStartedAt) / span));
+
+          // Blink entire repair duration
+          // Two-phase blink: 2 Hz normal, 6 Hz in final 10%
+          const rateHz = p < 0.90 ? 2 : 6;
           const t = nowTick / 1000;
           const pulse = 0.5 + 0.5 * Math.sin(2 * Math.PI * rateHz * t); // 0..1
 
@@ -75,15 +95,24 @@ export function makeCategoryScatterLayers(
     const getRadius = demoEnabled
       ? (d) => {
         const id = idOf(d);
-        const createdAt = meta.createdAtRef?.current.get(id);
-        const expiryAt  = meta.expiryAtRef?.current.get(id);
-        if (!createdAt || !expiryAt) return radiusPx;
 
-        const span = Math.max(1, expiryAt - createdAt);
-        const p = Math.min(1, Math.max(0, (nowTick - createdAt) / span));
-        if (p < 0.75) return radiusPx;
+        // Check repair status
+        const repairInfo = meta.resolutionMapRef?.current.get(id);
+        const isRepairing = repairInfo?.status === "repairing";
+        const repairStartedAt = meta.repairStartedAtRef?.current.get(id);
+        const expiryAt = meta.expiryAtRef?.current.get(id);
 
-        const rateHz = p < 0.95 ? 2 : 6;
+        // Only pulse if actively being repaired
+        if (!isRepairing || !repairStartedAt || !expiryAt) {
+          return radiusPx;
+        }
+
+        // Calculate progress through repair window
+        const span = Math.max(1, expiryAt - repairStartedAt);
+        const p = Math.min(1, Math.max(0, (nowTick - repairStartedAt) / span));
+
+        // Pulse radius during repair - speed up in final 10%
+        const rateHz = p < 0.90 ? 2 : 6;
         const t = nowTick / 1000;
         const pulse = 0.5 + 0.5 * Math.sin(2 * Math.PI * rateHz * t); // 0..1
         const grow = 1 + 0.20 * pulse; // up to +20% growth

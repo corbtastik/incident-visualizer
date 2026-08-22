@@ -112,15 +112,43 @@ export default function App() {
 
   // Per-category demo metadata for blink/grow accessors
   const demoMetaByCat = useMemo(() => ({
-    business:       businessFeed?.demo?.enabled ? { enabled: true,  createdAtRef: businessFeed.demo.createdAtRef,       expiryAtRef: businessFeed.demo.expiryAtRef } : { enabled: false },
-    consumer:       consumerFeed?.demo?.enabled ? { enabled: true,  createdAtRef: consumerFeed.demo.createdAtRef,       expiryAtRef: consumerFeed.demo.expiryAtRef } : { enabled: false },
-    emerging_tech:  emergingTechFeed?.demo?.enabled ? { enabled: true,  createdAtRef: emergingTechFeed.demo.createdAtRef, expiryAtRef: emergingTechFeed.demo.expiryAtRef } : { enabled: false },
-    federal:        federalFeed?.demo?.enabled ? { enabled: true,  createdAtRef: federalFeed.demo.createdAtRef,        expiryAtRef: federalFeed.demo.expiryAtRef } : { enabled: false },
-    infrastructure: infraFeed?.demo?.enabled ? { enabled: true,  createdAtRef: infraFeed.demo.createdAtRef,           expiryAtRef: infraFeed.demo.expiryAtRef } : { enabled: false }
+    business: businessFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: businessFeed.demo.createdAtRef,
+      expiryAtRef: businessFeed.demo.expiryAtRef,
+      resolutionMapRef: businessFeed.demo.resolutionMapRef,
+      repairStartedAtRef: businessFeed.demo.repairStartedAtRef
+    } : { enabled: false },
+    consumer: consumerFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: consumerFeed.demo.createdAtRef,
+      expiryAtRef: consumerFeed.demo.expiryAtRef,
+      resolutionMapRef: consumerFeed.demo.resolutionMapRef,
+      repairStartedAtRef: consumerFeed.demo.repairStartedAtRef
+    } : { enabled: false },
+    emerging_tech: emergingTechFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: emergingTechFeed.demo.createdAtRef,
+      expiryAtRef: emergingTechFeed.demo.expiryAtRef,
+      resolutionMapRef: emergingTechFeed.demo.resolutionMapRef,
+      repairStartedAtRef: emergingTechFeed.demo.repairStartedAtRef
+    } : { enabled: false },
+    federal: federalFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: federalFeed.demo.createdAtRef,
+      expiryAtRef: federalFeed.demo.expiryAtRef,
+      resolutionMapRef: federalFeed.demo.resolutionMapRef,
+      repairStartedAtRef: federalFeed.demo.repairStartedAtRef
+    } : { enabled: false },
+    infrastructure: infraFeed?.demo?.enabled ? {
+      enabled: true,
+      createdAtRef: infraFeed.demo.createdAtRef,
+      expiryAtRef: infraFeed.demo.expiryAtRef,
+      resolutionMapRef: infraFeed.demo.resolutionMapRef,
+      repairStartedAtRef: infraFeed.demo.repairStartedAtRef
+    } : { enabled: false }
   }), [
-    businessFeed?.demo?.enabled, consumerFeed?.demo?.enabled, emergingTechFeed?.demo?.enabled, federalFeed?.demo?.enabled, infraFeed?.demo?.enabled,
-    businessFeed?.demo?.createdAtRef, consumerFeed?.demo?.createdAtRef, emergingTechFeed?.demo?.createdAtRef, federalFeed?.demo?.createdAtRef, infraFeed?.demo?.createdAtRef,
-    businessFeed?.demo?.expiryAtRef, consumerFeed?.demo?.expiryAtRef, emergingTechFeed?.demo?.expiryAtRef, federalFeed?.demo?.expiryAtRef, infraFeed?.demo?.expiryAtRef
+    businessFeed?.demo, consumerFeed?.demo, emergingTechFeed?.demo, federalFeed?.demo, infraFeed?.demo
   ]);
 
   // Build layers with per-category render data and meta
