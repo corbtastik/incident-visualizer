@@ -53,6 +53,7 @@ export default function App() {
   const [searchResults, setSearchResults] = useState(null); // null = closed, [] = no results
   const [searchLoading, setSearchLoading] = useState(false);
   const [currentRunOnly, setCurrentRunOnly] = useState(true); // scope search to current sim run
+  const [searchMode, setSearchMode] = useState('semantic'); // 'lexical' | 'semantic' | 'hybrid'
   const [viewState, setViewState] = useState({
     longitude: -98,
     latitude: 33,
@@ -258,7 +259,13 @@ export default function App() {
         onToggleCurrentRun={setCurrentRunOnly}
         hasSimRunId={!!currentSimRunId}
       />
-      <ControlPanel state={state} setState={setState} onResetView={resetView} />
+      <ControlPanel
+        state={state}
+        setState={setState}
+        onResetView={resetView}
+        searchMode={searchMode}
+        onSearchModeChange={setSearchMode}
+      />
 
       <div className="bottom-pills">
         <span className="pill">

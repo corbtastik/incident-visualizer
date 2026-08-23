@@ -430,3 +430,39 @@ select {
 .current-run-toggle .toggle-label {
   font-weight: 500;
 }
+
+/* Search mode toggles in control panel */
+.search-mode-toggles {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 4px;
+}
+.search-mode-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: all 0.15s ease;
+}
+.search-mode-option:hover {
+  color: var(--fg);
+  background: rgba(255,255,255,0.05);
+}
+.search-mode-option:has(input:checked) {
+  background: var(--blue);
+  color: #fff;
+}
+.search-mode-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}

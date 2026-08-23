@@ -54,7 +54,13 @@ function rgbaForText(rgba = []) {
   return `rgba(${r}, ${g}, ${b}, 1)`;
 }
 
-export default function ControlPanel({ state, setState, onResetView }) {
+const SEARCH_MODES = [
+  { key: 'lexical', label: 'Lexical' },
+  { key: 'semantic', label: 'Semantic' },
+  { key: 'hybrid', label: 'Hybrid' }
+];
+
+export default function ControlPanel({ state, setState, onResetView, searchMode, onSearchModeChange }) {
   const { layer, radius, baseMap, colorRamp, types, categories } = state;
 
   const flatByOrder = useMemo(() => GROUPS.flatMap(g => g.items), []);
@@ -123,6 +129,24 @@ export default function ControlPanel({ state, setState, onResetView }) {
                 Center Map
               </button>
             )}
+          </div>
+
+          <Divider />
+
+          {/* Search Mode */}
+          <div className="section-title">Search Mode</div>
+          <div className="search-mode-toggles">
+            {SEARCH_MODES.map(mode => (
+              <label key={mode.key} className="search-mode-option">
+                <input
+                  type="radio"
+                  name="searchMode"
+                  checked={searchMode === mode.key}
+                  onChange={() => onSearchModeChange?.(mode.key)}
+                />
+                <span>{mode.label}</span>
+              </label>
+            ))}
           </div>
 
           <Divider />
