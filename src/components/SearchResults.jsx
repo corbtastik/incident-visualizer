@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { CAT_COLOR } from '../layers';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
+
 // Convert RGBA array to CSS
 function rgbaToCss(arr = [], alpha = 1) {
   const [r = 128, g = 128, b = 128] = arr;
@@ -46,30 +48,88 @@ function MatchBadge({ type }) {
   );
 }
 
-// Media attachment display
+// Expandable media attachment display
 function MediaAttachment({ media }) {
+  const [expanded, setExpanded] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(null);
+
   if (!media || media.length === 0) return null;
 
   const firstMedia = media[0];
+  const mediaId = firstMedia._id?.$oid || firstMedia._id;
   const filename = firstMedia.filename?.split('/').pop() || 'image';
   const caption = firstMedia.caption || '';
   const truncatedCaption = caption.length > 80 ? caption.slice(0, 77) + '...' : caption;
 
+  const handleToggle = () => {
+    if (!expanded) {
+      setImageLoading(true);
+      setImageError(null);
+    }
+    setExpanded(!expanded);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+  };
+
+  const handleImageError = () => {
+    setImageLoading(false);
+    setImageError('Failed to load image');
+  };
+
   return (
-    <div className="sr-row__media">
-      <div className="sr-row__media-icon" title="Has attached media">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-        </svg>
-      </div>
-      <div className="sr-row__media-info">
-        <span className="sr-row__media-filename">{filename}</span>
-        {truncatedCaption && (
-          <span className="sr-row__media-caption">{truncatedCaption}</span>
+    <div className={`sr-row__media ${expanded ? 'sr-row__media--expanded' : ''}`}>
+      <button className="sr-row__media-toggle" onClick={handleToggle} title={expanded ? 'Collapse' : 'Expand'}>
+        <div className="sr-row__media-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+          </svg>
+        </div>
+        <div className="sr-row__media-info">
+          <span className="sr-row__media-filename">{filename}</span>
+          {!expanded && truncatedCaption && (
+            <span className="sr-row__media-caption">{truncatedCaption}</span>
+          )}
+        </div>
+        {media.length > 1 && (
+          <span className="sr-row__media-count">+{media.length - 1} more</span>
         )}
-      </div>
-      {media.length > 1 && (
-        <span className="sr-row__media-count">+{media.length - 1} more</span>
+        <div className="sr-row__media-chevron">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {expanded ? (
+              <polyline points="18 15 12 9 6 15" />
+            ) : (
+              <polyline points="6 9 12 15 18 9" />
+            )}
+          </svg>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="sr-row__media-content">
+          {imageLoading && (
+            <div className="sr-row__media-loading">
+              <div className="sr-loading__spinner" />
+              <span>Loading image...</span>
+            </div>
+          )}
+          {imageError && (
+            <div className="sr-row__media-error">{imageError}</div>
+          )}
+          <img
+            src={`${API_BASE}/media/${mediaId}`}
+            alt={filename}
+            className="sr-row__media-image"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            style={{ display: imageLoading || imageError ? 'none' : 'block' }}
+          />
+          {!imageLoading && !imageError && caption && (
+            <div className="sr-row__media-full-caption">{caption}</div>
+          )}
+        </div>
       )}
     </div>
   );

@@ -1,10 +1,15 @@
 // server/index.js (ESM)
 import "dotenv/config";
+import { EventEmitter } from "events";
 import express from "express";
+
+// Increase listener limit for concurrent GCS streams
+EventEmitter.defaultMaxListeners = 50;
 import cors from "cors";
 import { MongoClient } from "mongodb";
 import makeLiveRouter from "./routes/live.js";
 import makeSearchRouter from "./routes/search.js";
+import makeMediaRouter from "./routes/media.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || "incidents";
@@ -104,6 +109,9 @@ async function main() {
 
   // ---- Search endpoint (/search) ----
   app.use(makeSearchRouter({ getDb }));
+
+  // ---- Media proxy endpoint (/media/:mediaId) ----
+  app.use(makeMediaRouter({ getDb }));
 
   // ---- Listen ----
   app.listen(PORT, () =>
