@@ -666,3 +666,190 @@ select {
   opacity: 0;
   pointer-events: none;
 }
+
+/* ============================================================
+   View Navigator - Prezi-style navigation
+   ============================================================ */
+
+.app-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.view-navigator {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Views container */
+.view-container {
+  position: absolute;
+  inset: 0;
+}
+
+/* View wrapper - always mounted, changes style based on mode */
+.view-wrapper {
+  will-change: transform;
+}
+
+.view-wrapper__content {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Overview mode styles */
+.view-wrapper--overview {
+  outline: 3px solid transparent;
+  outline-offset: -3px;
+  transition: outline-color 0.2s ease, box-shadow 0.3s ease !important;
+}
+
+.view-wrapper--overview:hover {
+  outline-color: var(--blue);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 3px var(--blue) !important;
+}
+
+.view-wrapper__label {
+  position: absolute;
+  bottom: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--fg);
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  z-index: 10;
+}
+
+.view-wrapper__overlay {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transition: background 0.2s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Navigation bar */
+.nav-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  z-index: 100;
+}
+
+.nav-bar__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-bar__btn:hover {
+  color: var(--fg);
+  background: rgba(255,255,255,0.05);
+}
+
+.nav-bar__btn--active {
+  color: #fff;
+  background: var(--blue);
+}
+
+.nav-bar__btn--active:hover {
+  background: var(--blue-2);
+}
+
+.nav-bar__btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.nav-bar__divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* Live Map View */
+.live-map-view {
+  position: absolute;
+  inset: 0;
+}
+
+/* Heatmap View */
+.heatmap-view {
+  position: absolute;
+  inset: 0;
+}
+
+.heatmap-controls {
+  /* Uses existing left-dock styles */
+}
+
+.heatmap-error {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(220, 38, 38, 0.9);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 60;
+}
+
+/* Map canvas adjustments for views */
+.live-map-view .map-canvas,
+.heatmap-view .map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* Bottom pills positioning for views */
+.live-map-view .bottom-pills,
+.heatmap-view .bottom-pills {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 40;
+}
+
+.pill {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}

@@ -10,6 +10,7 @@ import { MongoClient } from "mongodb";
 import makeLiveRouter from "./routes/live.js";
 import makeSearchRouter from "./routes/search.js";
 import makeMediaRouter from "./routes/media.js";
+import makeHeatmapRouter from "./routes/heatmap.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || "incidents";
@@ -112,6 +113,9 @@ async function main() {
 
   // ---- Media proxy endpoint (/media/:mediaId) ----
   app.use(makeMediaRouter({ getDb }));
+
+  // ---- Heatmap endpoint (/heatmap/:category) ----
+  app.use(makeHeatmapRouter({ getDb }));
 
   // ---- Listen ----
   app.listen(PORT, () =>
