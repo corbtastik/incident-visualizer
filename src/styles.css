@@ -824,6 +824,74 @@ select {
   z-index: 60;
 }
 
+/* Heatmap has no right sidebar, so extend search results to the right */
+.heatmap-view .bottom-dock {
+  right: 12px;
+}
+
+/* Time playback controls */
+.time-display {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 8px 0;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.time-slider {
+  margin: 4px 0;
+}
+
+.time-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.time-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.time-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--fg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.time-btn:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: var(--muted);
+}
+
+.time-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.time-stats {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 12px;
+}
+
 /* Map canvas adjustments for views */
 .live-map-view .map-canvas,
 .heatmap-view .map-canvas {

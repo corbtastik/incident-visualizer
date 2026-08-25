@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
+ * Extract timestamp from MongoDB ObjectId string
+ */
+function objectIdToTimestamp(objectId) {
+  if (!objectId || typeof objectId !== 'string' || objectId.length < 8) return null;
+  // First 8 hex chars of ObjectId are seconds since epoch
+  const timestamp = parseInt(objectId.substring(0, 8), 16) * 1000;
+  return isNaN(timestamp) ? null : timestamp;
+}
+
+/**
  * Hook to fetch historical incident data for heatmap visualization.
  * Fetches all incidents (no simRunId filter) for density visualization.
  */
@@ -9,6 +19,7 @@ export function useHeatmapData({ baseUrl, categories, limit = 50000 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({ total: 0, byCategory: {} });
+  const [timeRange, setTimeRange] = useState({ min: null, max: null });
   const abortControllerRef = useRef(null);
 
   const fetchData = useCallback(async () => {
@@ -37,25 +48,44 @@ export function useHeatmapData({ baseUrl, categories, limit = 50000 }) {
 
       const results = await Promise.all(promises);
 
-      // Combine all data
+      // Combine all data and extract timestamps
       const allData = [];
       const byCategory = {};
+      let minTime = Infinity;
+      let maxTime = -Infinity;
 
       for (const { category, data: catData } of results) {
         byCategory[category] = catData.length;
         for (const d of catData) {
           if (d.lat && d.lng) {
+            // Extract timestamp from _id (ObjectId) or ts field
+            const idStr = typeof d._id === 'object' ? d._id.$oid : d._id;
+            const timestamp = d.ts ? new Date(d.ts).getTime() : objectIdToTimestamp(idStr);
+
+            if (timestamp) {
+              minTime = Math.min(minTime, timestamp);
+              maxTime = Math.max(maxTime, timestamp);
+            }
+
             allData.push({
               ...d,
               category,
-              position: [d.lng, d.lat]
+              position: [d.lng, d.lat],
+              timestamp: timestamp || Date.now()
             });
           }
         }
       }
 
+      // Sort by timestamp for consistent ordering
+      allData.sort((a, b) => a.timestamp - b.timestamp);
+
       setData(allData);
       setStats({ total: allData.length, byCategory });
+      setTimeRange({
+        min: minTime === Infinity ? null : minTime,
+        max: maxTime === -Infinity ? null : maxTime
+      });
       setLoading(false);
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -75,5 +105,5 @@ export function useHeatmapData({ baseUrl, categories, limit = 50000 }) {
     };
   }, [fetchData]);
 
-  return { data, loading, error, stats, refetch: fetchData };
+  return { data, loading, error, stats, timeRange, refetch: fetchData };
 }
