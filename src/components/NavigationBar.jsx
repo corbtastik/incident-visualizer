@@ -38,6 +38,12 @@ export default function NavigationBar({ views, currentView, onNavigate }) {
               <path d="M12 22c-4 0-8-2-8-6 0-3 3-5 5-7 1-1 2-2 3-2s2 1 3 2c2 2 5 4 5 7 0 4-4 6-8 6z" />
             </svg>
           )}
+          {view.id === 'search' && (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+          )}
           <span>{view.label}</span>
         </button>
       ))}

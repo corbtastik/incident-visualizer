@@ -11,6 +11,7 @@ import makeLiveRouter from "./routes/live.js";
 import makeSearchRouter from "./routes/search.js";
 import makeMediaRouter from "./routes/media.js";
 import makeHeatmapRouter from "./routes/heatmap.js";
+import makeSearchExplorerRouter from "./routes/searchExplorer.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || "incidents";
@@ -116,6 +117,9 @@ async function main() {
 
   // ---- Heatmap endpoint (/heatmap/:category) ----
   app.use(makeHeatmapRouter({ getDb }));
+
+  // ---- Search Explorer endpoints (/search/lexical, /search/vector, /search/hybrid) ----
+  app.use(makeSearchExplorerRouter({ getDb }));
 
   // ---- Listen ----
   app.listen(PORT, () =>
