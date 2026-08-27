@@ -6,19 +6,82 @@ const SEARCH_TYPES = [
   { id: 'vector', label: 'Vector', description: 'Semantic search' },
 ];
 
+/**
+ * Lightweight JSON syntax highlighter using brand colors
+ */
+function highlightJson(obj) {
+  const json = JSON.stringify(obj, null, 2);
+
+  // Escape HTML first
+  let highlighted = json
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // MongoDB operators (purple) - match $word patterns
+  highlighted = highlighted.replace(
+    /"\$(\w+)"/g,
+    '"<span class="json-mongo-op">$$$1</span>"'
+  );
+
+  // Property keys (blue) - match "key": patterns
+  highlighted = highlighted.replace(
+    /"([^"]+)"(?=\s*:)/g,
+    '"<span class="json-key">$1</span>"'
+  );
+
+  // String values (teal) - match ": "value" patterns, but not already highlighted
+  highlighted = highlighted.replace(
+    /: "([^"]*)"(?![^<]*<\/span>)/g,
+    ': "<span class="json-string">$1</span>"'
+  );
+
+  // Numbers (yellow)
+  highlighted = highlighted.replace(
+    /: (\d+\.?\d*)/g,
+    ': <span class="json-number">$1</span>'
+  );
+
+  // Booleans and null (pink)
+  highlighted = highlighted.replace(
+    /: (true|false|null)/g,
+    ': <span class="json-bool">$1</span>'
+  );
+
+  // Brackets and braces (muted)
+  highlighted = highlighted.replace(
+    /([[{}\]])/g,
+    '<span class="json-bracket">$1</span>'
+  );
+
+  return highlighted;
+}
+
 export default function SearchExplorerView({ apiBase, isActive = true }) {
   const [query, setQuery] = useState('');
   const [searchType, setSearchType] = useState('hybrid');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [selectedResult, setSelectedResult] = useState(null);
-  const [showPipeline, setShowPipeline] = useState(true);
+  const [selectedType, setSelectedType] = useState(null); // 'incident' or 'media'
+  const [showAggregation, setShowAggregation] = useState(true);
+
+  const handleSelectIncident = (incident) => {
+    setSelectedResult(incident);
+    setSelectedType('incident');
+  };
+
+  const handleSelectMedia = (media) => {
+    setSelectedResult(media);
+    setSelectedType('media');
+  };
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
 
     setLoading(true);
     setSelectedResult(null);
+    setSelectedType(null);
 
     try {
       const response = await fetch(`${apiBase}/search/${searchType}`, {
@@ -32,13 +95,17 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
       const data = await response.json();
       setResults(data);
 
-      // Auto-select first result
-      if (data.results?.length > 0) {
-        setSelectedResult(data.results[0]);
+      // Auto-select first incident result
+      if (data.incidents?.length > 0) {
+        setSelectedResult(data.incidents[0]);
+        setSelectedType('incident');
+      } else if (data.media?.length > 0) {
+        setSelectedResult(data.media[0]);
+        setSelectedType('media');
       }
     } catch (err) {
       console.error('Search error:', err);
-      setResults({ error: err.message, results: [] });
+      setResults({ error: err.message, incidents: [], media: [] });
     } finally {
       setLoading(false);
     }
@@ -55,12 +122,6 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
       {/* Header */}
       <div className="search-explorer__header">
         <h1>Search Playground</h1>
-        <button
-          className="search-explorer__help-btn"
-          title="How search works"
-        >
-          ?
-        </button>
       </div>
 
       {/* Search Input */}
@@ -110,14 +171,10 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
       {/* Query Pipeline Visualization */}
       {results && (
         <div className="search-explorer__pipeline-section">
-          <div
-            className="search-explorer__pipeline-header"
-            onClick={() => setShowPipeline(!showPipeline)}
-          >
-            <span>{showPipeline ? '▼' : '▶'} Query Pipeline</span>
+          <div className="search-explorer__pipeline-header">
+            <span>Query Pipeline</span>
           </div>
-          {showPipeline && (
-            <div className="search-explorer__pipeline">
+          <div className="search-explorer__pipeline">
               <div className="pipeline-step">
                 <div className="pipeline-step__icon">1</div>
                 <div className="pipeline-step__content">
@@ -172,45 +229,86 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
                 </div>
               </div>
             </div>
-          )}
         </div>
       )}
 
-      {/* Results Section */}
+      {/* Results Section - Side by Side */}
       {results && (
         <div className="search-explorer__results-section">
-          {/* Results List */}
-          <div className="search-explorer__results-list">
+          {/* Incidents Column */}
+          <div className="search-explorer__results-column">
             <div className="search-explorer__results-header">
-              Results ({results.results?.length || 0})
+              <svg className="search-explorer__results-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+              INCIDENTS ({results.incidents?.length || 0})
             </div>
             <div className="search-explorer__results-items">
-              {results.results?.map((result, idx) => (
+              {results.incidents?.map((incident, idx) => (
                 <div
-                  key={result._id || idx}
-                  className={`search-result-item ${selectedResult?._id === result._id ? 'search-result-item--selected' : ''}`}
-                  onClick={() => setSelectedResult(result)}
+                  key={incident._id || idx}
+                  className={`search-result-item ${selectedResult?._id === incident._id && selectedType === 'incident' ? 'search-result-item--selected' : ''}`}
+                  onClick={() => handleSelectIncident(incident)}
                 >
-                  <div className="search-result-item__header">
-                    <span className="search-result-item__title">
-                      {result.serviceIssue?.type || 'Unknown Type'}
-                    </span>
-                    <span className="search-result-item__score">
-                      {(result.scores?.hybrid || result.scores?.vector || result.scores?.lexical || 0).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="search-result-item__narrative">
-                    {result.narrative?.substring(0, 100)}...
-                  </div>
-                  <div className="search-result-item__meta">
-                    <span>{result.city}, {result.state}</span>
-                    <span className="search-result-item__category">{result.category}</span>
+                  <div className="search-result-item__body">
+                    <div className="search-result-item__header">
+                      <span className="search-result-item__title">
+                        {incident.serviceIssue?.type || 'Unknown Type'}
+                      </span>
+                      <span className="search-result-item__score">
+                        {(incident.scores?.hybrid || incident.scores?.vector || incident.scores?.lexical || 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="search-result-item__narrative">
+                      {incident.narrative?.substring(0, 80)}...
+                    </div>
+                    <div className="search-result-item__meta">
+                      <span>{incident.city}, {incident.state}</span>
+                      <span className={`search-result-item__category search-result-item__category--${incident.category}`}>{incident.category?.replace('_', ' ')}</span>
+                    </div>
                   </div>
                 </div>
               ))}
-              {results.results?.length === 0 && (
+              {results.incidents?.length === 0 && (
                 <div className="search-explorer__no-results">
-                  No results found
+                  No incidents found
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Media Column */}
+          <div className="search-explorer__results-column">
+            <div className="search-explorer__results-header">
+              <svg className="search-explorer__results-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              MEDIA ({results.media?.length || 0})
+            </div>
+            <div className="search-explorer__media-grid">
+              {results.media?.map((media, idx) => (
+                <div
+                  key={media._id || idx}
+                  className={`search-media-item ${selectedResult?._id === media._id && selectedType === 'media' ? 'search-media-item--selected' : ''}`}
+                  onClick={() => handleSelectMedia(media)}
+                >
+                  <div className="search-media-item__image">
+                    <img src={media.thumbnail} alt={media.caption} />
+                  </div>
+                  <div className="search-media-item__score">
+                    {(media.scores?.hybrid || media.scores?.vector || media.scores?.lexical || 0).toFixed(2)}
+                  </div>
+                </div>
+              ))}
+              {results.media?.length === 0 && (
+                <div className="search-explorer__no-results">
+                  No media found
                 </div>
               )}
             </div>
@@ -220,6 +318,54 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
           <div className="search-explorer__details-panel">
             {selectedResult ? (
               <>
+                {/* Type indicator */}
+                <div className="details-section details-section--type">
+                  <span className={`details-type-badge details-type-badge--${selectedType}`}>
+                    {selectedType === 'incident' ? (
+                      <>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                          <polyline points="10 9 9 9 8 9" />
+                        </svg>
+                        Incident
+                      </>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                        Media
+                      </>
+                    )}
+                  </span>
+                </div>
+
+                {/* Media preview (if media selected) */}
+                {selectedType === 'media' && selectedResult.thumbnail && (
+                  <div className="details-section">
+                    <div className="details-media-preview">
+                      <img src={selectedResult.thumbnail} alt={selectedResult.caption} />
+                    </div>
+                    <p className="details-media-caption">{selectedResult.caption}</p>
+                    <div className="details-media-filename">{selectedResult.filename}</div>
+                  </div>
+                )}
+
+                {/* Incident info (if incident selected) */}
+                {selectedType === 'incident' && (
+                  <div className="details-section">
+                    <h3>{selectedResult.serviceIssue?.type}</h3>
+                    <p className="details-narrative">{selectedResult.narrative}</p>
+                    <div className="details-location">{selectedResult.city}, {selectedResult.state}</div>
+                  </div>
+                )}
+
+                {/* Score Breakdown */}
                 <div className="details-section">
                   <h3>Score Breakdown</h3>
                   <div className="score-breakdown">
@@ -262,6 +408,7 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
                   </div>
                 </div>
 
+                {/* Matched Terms */}
                 <div className="details-section">
                   <h3>Matched Terms</h3>
                   <div className="matched-terms">
@@ -274,20 +421,21 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
                   </div>
                 </div>
 
-                <div className="details-section">
-                  <h3>Why This Matched</h3>
-                  <p className="match-reason">{selectedResult.matchReason}</p>
-                </div>
-
-                {selectedResult.media && selectedResult.media.length > 0 && (
+                {/* Why This Matched (incidents only) */}
+                {selectedType === 'incident' && selectedResult.matchReason && (
                   <div className="details-section">
-                    <h3>Media Attachments</h3>
-                    <div className="media-list">
-                      {selectedResult.media.map((m, i) => (
-                        <div key={i} className="media-item">
-                          <span className="media-icon">📎</span>
-                          <span>{m.filename}</span>
-                        </div>
+                    <h3>Why This Matched</h3>
+                    <p className="match-reason">{selectedResult.matchReason}</p>
+                  </div>
+                )}
+
+                {/* Tags (media only) */}
+                {selectedType === 'media' && selectedResult.tags && (
+                  <div className="details-section">
+                    <h3>Image Tags</h3>
+                    <div className="matched-terms">
+                      {selectedResult.tags.map((tag, i) => (
+                        <span key={i} className="matched-term">{tag}</span>
                       ))}
                     </div>
                   </div>
@@ -305,18 +453,27 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
       {/* Aggregation Pipeline Preview */}
       {results?.pipeline && (
         <div className="search-explorer__aggregation-section">
-          <div className="search-explorer__aggregation-header">
-            <span>Aggregation Pipeline</span>
+          <div
+            className="search-explorer__aggregation-header"
+            onClick={() => setShowAggregation(!showAggregation)}
+          >
+            <span>{showAggregation ? '▼' : '▶'} Aggregation Pipeline</span>
             <button
               className="search-explorer__copy-btn"
-              onClick={() => navigator.clipboard.writeText(JSON.stringify(results.pipeline, null, 2))}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(JSON.stringify(results.pipeline, null, 2));
+              }}
             >
               Copy
             </button>
           </div>
-          <pre className="search-explorer__aggregation-code">
-            {JSON.stringify(results.pipeline, null, 2)}
-          </pre>
+          {showAggregation && (
+            <pre
+              className="search-explorer__aggregation-code"
+              dangerouslySetInnerHTML={{ __html: highlightJson(results.pipeline) }}
+            />
+          )}
         </div>
       )}
 
