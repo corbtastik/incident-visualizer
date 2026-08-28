@@ -24,9 +24,16 @@ function buildPipeline(searchType, query, queryVector = null) {
       {
         $search: {
           index: LEXICAL_INDEX,
-          text: {
-            query: query,
-            path: ['serviceIssue.narrative', 'serviceIssue.type', 'city']
+          compound: {
+            filter: [{
+              exists: { path: 'serviceIssue.narrative' }
+            }],
+            must: [{
+              text: {
+                query: query,
+                path: ['serviceIssue.narrative', 'serviceIssue.type']
+              }
+            }]
           }
         }
       },
@@ -102,7 +109,14 @@ function buildPipeline(searchType, query, queryVector = null) {
                 {
                   $search: {
                     index: LEXICAL_INDEX,
-                    text: { query: query, path: ['serviceIssue.narrative', 'serviceIssue.type', 'city'] }
+                    compound: {
+                      filter: [{
+                        exists: { path: 'serviceIssue.narrative' }
+                      }],
+                      must: [{
+                        text: { query: query, path: ['serviceIssue.narrative', 'serviceIssue.type'] }
+                      }]
+                    }
                   }
                 },
                 { $limit: 50 }
@@ -207,13 +221,21 @@ export default function makeSearchExplorerRouter({ getDb }) {
       const incidentsColl = db.collection('incident_events');
 
       // Run lexical search on incidents - search narrative and type fields
+      // Use compound search with filter to only return docs with narratives
       const incidentPipeline = [
         {
           $search: {
             index: LEXICAL_INDEX,
-            text: {
-              query: query,
-              path: ['serviceIssue.narrative', 'serviceIssue.type', 'city']
+            compound: {
+              filter: [{
+                exists: { path: 'serviceIssue.narrative' }
+              }],
+              must: [{
+                text: {
+                  query: query,
+                  path: ['serviceIssue.narrative', 'serviceIssue.type']
+                }
+              }]
             }
           }
         },
@@ -373,9 +395,16 @@ export default function makeSearchExplorerRouter({ getDb }) {
                   {
                     $search: {
                       index: LEXICAL_INDEX,
-                      text: {
-                        query: query,
-                        path: ['serviceIssue.narrative', 'serviceIssue.type', 'city']
+                      compound: {
+                        filter: [{
+                          exists: { path: 'serviceIssue.narrative' }
+                        }],
+                        must: [{
+                          text: {
+                            query: query,
+                            path: ['serviceIssue.narrative', 'serviceIssue.type']
+                          }
+                        }]
                       }
                     }
                   },
