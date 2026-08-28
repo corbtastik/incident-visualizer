@@ -209,7 +209,11 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
                     {searchType === 'lexical' ? (
                       <span>Fuzzy matching enabled</span>
                     ) : (
-                      <span>[{results.embedding?.slice(0, 4).map(n => n.toFixed(2)).join(', ')}, ...]</span>
+                      <span>
+                        {Array.isArray(results.embedding)
+                          ? `[${results.embedding.slice(0, 4).map(n => n.toFixed(2)).join(', ')}, ...]`
+                          : results.embedding || '[embedding generated]'}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -299,7 +303,7 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
                   onClick={() => handleSelectMedia(media)}
                 >
                   <div className="search-media-item__image">
-                    <img src={media.thumbnail} alt={media.caption} />
+                    <img src={`${apiBase}${media.thumbnail}`} alt={media.caption} />
                   </div>
                   <div className="search-media-item__score">
                     {(media.scores?.hybrid || media.scores?.vector || media.scores?.lexical || 0).toFixed(2)}
@@ -349,7 +353,7 @@ export default function SearchExplorerView({ apiBase, isActive = true }) {
                 {selectedType === 'media' && selectedResult.thumbnail && (
                   <div className="details-section">
                     <div className="details-media-preview">
-                      <img src={selectedResult.thumbnail} alt={selectedResult.caption} />
+                      <img src={`${apiBase}${selectedResult.thumbnail}`} alt={selectedResult.caption} />
                     </div>
                     <p className="details-media-caption">{selectedResult.caption}</p>
                     <div className="details-media-filename">{selectedResult.filename}</div>
