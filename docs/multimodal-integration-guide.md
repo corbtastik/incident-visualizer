@@ -206,7 +206,7 @@ async function embedImageBatch(images) {
 ### File Structure
 
 ```
-simulator/
+incident-simulator/
 ├── server/
 │   ├── src/
 │   │   ├── voyageai.js          # NEW: VoyageAI client
@@ -226,7 +226,7 @@ simulator/
 #### 1. `voyageai.js` - VoyageAI Client
 
 ```javascript
-// simulator/server/src/voyageai.js
+// incident-simulator/server/src/voyageai.js
 import { CONFIG } from './config.js';
 
 const VOYAGE_API_KEY = CONFIG.VOYAGE_API_KEY;
@@ -301,7 +301,7 @@ export async function embedQuery(text) {
 #### 2. `mediaService.js` - Image Selection & Embedding
 
 ```javascript
-// simulator/server/src/mediaService.js
+// incident-simulator/server/src/mediaService.js
 import fs from 'fs/promises';
 import path from 'path';
 import { embedImage } from './voyageai.js';
@@ -408,7 +408,7 @@ export async function createMediaDocument(incident, simRunId) {
 #### 3. `db.js` - Add Media Collection & Index
 
 ```javascript
-// Add to simulator/server/src/db.js
+// Add to incident-simulator/server/src/db.js
 
 /**
  * Ensure indexes for incident_media collection (multimodal search)
@@ -443,7 +443,7 @@ export async function insertMediaDoc(passedDb, doc) {
 #### 4. `simulator.js` - Integrate Media Attachment
 
 ```javascript
-// Modify simulator/server/src/simulator.js
+// Modify incident-simulator/server/src/simulator.js
 
 import { createMediaDocument } from './mediaService.js';
 import { insertMediaDoc } from './db.js';
