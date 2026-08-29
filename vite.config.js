@@ -5,6 +5,7 @@ export default defineConfig({
   test: { environment: 'jsdom' },
   server: {
     port: 5174,
+    strictPort: true,
     proxy: {
       "/live": "http://localhost:4000",
       "/search": "http://localhost:4000"
