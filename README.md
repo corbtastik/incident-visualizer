@@ -1,6 +1,6 @@
 # Incident Visualizer
 
-A real-time map and dashboard that visualizes **telecom incidents** streamed from the [U.S. Incidents Simulator](https://github.com/corbtastik/simulator) into **MongoDB Atlas**.
+A real-time map and dashboard that visualizes **telecom incidents** streamed from the [Incident Simulator](https://github.com/corbtastik/incident-simulator) into **MongoDB Atlas**.
 Each colored point on the map represents a live incident across U.S. cities — categorized into Business, Consumer, Emerging Tech, Federal, and Infrastructure events.
 The app continuously polls MongoDB for new activity (via `/live/:category` endpoints) and displays animated updates by category and service type.
 
@@ -28,8 +28,8 @@ It’s designed for demos showcasing **MongoDB Atlas Stream Processing (ASP)** a
 
 * **Node.js 20+**
 * **npm** (or **pnpm**)
-* A running [Simulator server](https://github.com/corbtastik/simulator)
-  → must expose REST endpoints at `http://localhost:5050`
+* A running [Incident Simulator](https://github.com/corbtastik/incident-simulator)
+  → populates MongoDB with incident data (the Visualizer reads MongoDB directly, not the simulator's API)
 
 ---
 
@@ -59,13 +59,13 @@ The UI will start on `http://localhost:5174`.
 Edit the `.env` file to match your setup:
 
 ```env
-VITE_API_BASE=http://localhost:5050
+VITE_API_BASE=http://localhost:4000
 VITE_MAPTILER_KEY=<your_maptiler_api_key>   # optional, for MapLibre styles
 ```
 
-* **`VITE_API_BASE`**: URL of the Simulator server (default: `http://localhost:5050`).
+* **`VITE_API_BASE`**: URL of the Visualizer API server (default: `http://localhost:4000`).
 * **`VITE_MAPTILER_KEY`**: Optional key for custom map tiles (if not using the default dark base map).
-* The app expects `/status`, `/live`, and `/live/:category` endpoints to be available from the simulator.
+* The app expects `/live/:category`, `/search`, `/search/lexical|vector|hybrid`, `/heatmap/:category`, and `/media/:mediaId` from its own API server (`server/index.js`).
 
 ---
 
@@ -125,7 +125,7 @@ VITE_MAPTILER_KEY=<your_maptiler_api_key>   # optional, for MapLibre styles
 1. Start the simulator server:
 
    ```bash
-   cd simulator/server
+   cd incident-simulator/server
    npm run dev
    ```
 2. Open the Visualizer at `http://localhost:5174`.
