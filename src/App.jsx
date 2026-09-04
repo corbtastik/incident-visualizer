@@ -5,6 +5,7 @@ import ViewNavigator from './components/ViewNavigator.jsx';
 import LiveMapView from './views/LiveMapView.jsx';
 import HeatmapView from './views/HeatmapView.jsx';
 import SearchExplorerView from './views/SearchExplorerView.jsx';
+import ChatView from './views/ChatView.jsx';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
@@ -22,6 +23,10 @@ export default function App() {
         />
         <SearchExplorerView
           viewId="search"
+          apiBase={API_BASE}
+        />
+        <ChatView
+          viewId="chat"
           apiBase={API_BASE}
         />
       </ViewNavigator>

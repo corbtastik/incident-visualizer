@@ -6,6 +6,7 @@ const VIEWS = [
   { id: 'live', label: 'Live Map', x: 0, y: 0 },
   { id: 'heatmap', label: 'Heatmap', x: 1600, y: 0 },
   { id: 'search', label: 'Search Explorer', x: 3200, y: 0 },
+  { id: 'chat', label: 'Assistant', x: 4800, y: 0 },
 ];
 
 // Standard view dimensions for overview thumbnails
@@ -74,6 +75,9 @@ export default function ViewNavigator({ children }) {
           break;
         case '3':
           setCurrentView('search');
+          break;
+        case '4':
+          setCurrentView('chat');
           break;
         case 'ArrowLeft':
           setCurrentView(prev => {
