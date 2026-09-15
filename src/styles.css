@@ -1680,6 +1680,7 @@ select {
 }
 
 .chat__main {
+  position: relative;            /* anchors the jump-to-latest button */
   flex: 1 1 auto;
   min-width: 0;                  /* let the transcript shrink, not overflow */
   display: flex;
@@ -2373,3 +2374,80 @@ body.is-resizing {
   cursor: col-resize;
   user-select: none;
 }
+
+/* --- streaming states --------------------------------------------------- */
+
+/* A partial answer that was stopped or failed is still worth reading, so it
+   stays on screen -- labelled, rather than silently looking finished. */
+.chat-msg__note {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.chat-msg__note--failed {
+  color: #e5534b;
+  border-color: #e5534b;
+}
+
+/* Floats above the composer. Only shown once the reader has scrolled away
+   from the bottom, so it never covers anything they were reading. */
+.chat__jump {
+  position: absolute;
+  left: 50%;
+  bottom: 190px;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.chat__jump:hover { border-color: var(--blue); }
+
+.chat__error {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 24px;
+  padding: 9px 14px;
+  border: 1px solid #e5534b;
+  border-radius: 10px;
+  background: rgba(229, 83, 75, 0.08);
+  color: var(--fg);
+  font-size: 13px;
+  max-width: 780px;
+  align-self: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chat__error button {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat__error button:hover { border-color: var(--blue); }

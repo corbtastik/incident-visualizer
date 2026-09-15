@@ -1,4 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+
+import { useChatStream } from '../hooks/useChatStream.js';
 
 import MessageList from '../components/chat/MessageList.jsx';
 import Composer from '../components/chat/Composer.jsx';
@@ -102,7 +104,6 @@ let nextId = 1;
 const newId = (prefix) => `${prefix}-new-${nextId++}`;
 
 export default function ChatView() {
-  const [messages, setMessages] = useState([...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP]);
   const [projects, setProjects] = useState(SAMPLE_PROJECTS);
   const [conversations, setConversations] = useState(SAMPLE_CONVERSATIONS);
   const [activeId, setActiveId] = useState('c-1');
@@ -115,12 +116,34 @@ export default function ChatView() {
   const [provider, setProvider] = useState(DEFAULT_PROVIDER);
   const scrollRef = useRef(null);
 
-  // Pin to the newest turn on mount. Phase 2 makes this conditional on the
-  // reader not having scrolled away mid-stream.
-  useEffect(() => {
+  const { messages, isStreaming, error, send, stop, reset } = useChatStream({
+    provider,
+    initialMessages: [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP],
+  });
+
+  // Pinned while the reader is at the bottom; released the moment they scroll
+  // away. Dragging someone back down mid-sentence is the worst thing a
+  // streaming transcript can do.
+  const [pinned, setPinned] = useState(true);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setPinned(distance < 48);
+  }, []);
+
+  const jumpToLatest = useCallback(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages]);
+    setPinned(true);
+  }, []);
+
+  useEffect(() => {
+    if (!pinned) return;
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, pinned]);
 
   const handleResize = (px) => {
     setSidebarWidth(px);
@@ -131,7 +154,8 @@ export default function ChatView() {
   // an empty one, which is honest until conversations are actually stored.
   const handleSelect = (id) => {
     setActiveId(id);
-    setMessages(id === 'c-1' ? [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP] : []);
+    reset(id === 'c-1' ? [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP] : []);
+    setPinned(true);
   };
 
   const handleNewChat = (projectId) => {
@@ -145,8 +169,9 @@ export default function ChatView() {
     };
     setConversations((prev) => [conversation, ...prev]);
     setActiveId(conversation.id);
-    setMessages([]);
+    reset([]);
     setDraft('');
+    setPinned(true);
   };
 
   // Deleting the open conversation has to leave something selected, or the
@@ -157,7 +182,7 @@ export default function ChatView() {
       if (id === activeId) {
         const next = remaining[0] ?? null;
         setActiveId(next?.id ?? null);
-        setMessages(next?.id === 'c-1' ? [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP] : []);
+        reset(next?.id === 'c-1' ? [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP] : []);
       }
       return remaining;
     });
@@ -168,9 +193,25 @@ export default function ChatView() {
   };
 
   const handleSubmit = (text) => {
-    // Wired to the streaming hook in phase 2.
-    console.info('[chat] submit (not yet wired):', { provider, text });
     setDraft('');
+    setPinned(true);
+    send(text);
+
+    // Keep the sidebar honest: a conversation's title and recency come from
+    // what was actually said in it.
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === activeId
+          ? {
+              ...c,
+              title: c.messageCount === 0 ? text.slice(0, 48) : c.title,
+              updatedAt: new Date().toISOString(),
+              messageCount: c.messageCount + 2,
+              provider,
+            }
+          : c
+      )
+    );
   };
 
   return (
@@ -213,7 +254,7 @@ export default function ChatView() {
         </div>
       </header>
 
-      <div className="chat__transcript" ref={scrollRef}>
+      <div className="chat__transcript" ref={scrollRef} onScroll={handleScroll}>
         {messages.length === 0 ? (
           <div className="chat__empty">
             <h2>Ask about the incident data</h2>
@@ -231,11 +272,28 @@ export default function ChatView() {
         )}
       </div>
 
+      {!pinned && messages.length > 0 && (
+        <button type="button" className="chat__jump" onClick={jumpToLatest}>
+          Jump to latest ↓
+        </button>
+      )}
+
+      {error && (
+        <div className="chat__error" role="alert">
+          <span>{error}</span>
+          <button type="button" onClick={() => send(messages.at(-2)?.text ?? '')}>
+            Retry
+          </button>
+        </div>
+      )}
+
       <Composer
         value={draft}
         onChange={setDraft}
         onSubmit={handleSubmit}
-        disabled={false}
+        disabled={isStreaming}
+        streaming={isStreaming}
+        onStop={stop}
       />
       </div>
     </div>

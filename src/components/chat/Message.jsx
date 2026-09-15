@@ -4,7 +4,7 @@ import { providerLabel } from './providers.js';
 import ResultChips from './ResultChips.jsx';
 
 export default function Message({ message }) {
-  const { role, text, retrieval, citations, streaming, provider, model } = message;
+  const { role, text, retrieval, citations, streaming, provider, model, stopped, failed } = message;
 
   if (role === 'user') {
     return (
@@ -35,6 +35,8 @@ export default function Message({ message }) {
       <div className="chat-msg__text">
         {text}
         {streaming && <span className="chat-msg__caret" aria-hidden="true" />}
+        {stopped && <span className="chat-msg__note">stopped</span>}
+        {failed && <span className="chat-msg__note chat-msg__note--failed">incomplete</span>}
       </div>
 
       {citations?.length > 0 && <ResultChips citations={citations} />}
