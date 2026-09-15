@@ -11,75 +11,13 @@ import SidebarResizer, {
   clampSidebarWidth,
 } from '../components/chat/SidebarResizer.jsx';
 import { DEFAULT_PROVIDER } from '../components/chat/providers.js';
-import { SAMPLE_PROJECTS, SAMPLE_CONVERSATIONS } from '../components/chat/conversations.js';
+import * as chatApi from '../api/chat.js';
+import { DEFAULT_PROJECT } from '../components/chat/conversations.js';
 
 // Phase 1 is the shell: layout, styling and scroll behaviour, driven by a
 // static transcript. The streaming hook replaces this in phase 2, so the
 // shape here is the shape the real messages will have -- one retrieval entry
 // and one assistant turn per exchange, never merged into a single blob.
-const SAMPLE_TRANSCRIPT = [
-  {
-    id: 'm1',
-    role: 'user',
-    text: 'What is going on with fiber in Dallas?',
-  },
-  {
-    id: 'm2',
-    role: 'assistant',
-    provider: 'orbit',
-    model: 'orbit-1',
-    retrieval: {
-      tool: 'search_incidents',
-      mode: 'vector',
-      index: 'narrative_autoembed_index',
-      query: 'fiber cut Dallas',
-      count: 12,
-    },
-    text:
-      'There are 12 open fiber incidents in the Dallas area, and 9 of them ' +
-      'share a root cause of third-party dig damage along the same plant ' +
-      'segment. The earliest was reported 42 minutes ago; the rest followed ' +
-      'within the next 15 minutes, which is consistent with a single ' +
-      'upstream break rather than unrelated failures.',
-    citations: [
-      { id: 'c1', ticketRef: 'INC-48210', city: 'Dallas', category: 'infrastructure' },
-      { id: 'c2', ticketRef: 'INC-48214', city: 'Dallas', category: 'infrastructure' },
-      { id: 'c3', ticketRef: 'INC-48219', city: 'Irving', category: 'infrastructure' },
-    ],
-  },
-];
-
-const SAMPLE_FOLLOW_UP = [
-  {
-    id: 'm3',
-    role: 'user',
-    text: 'Ask Claude the same thing.',
-  },
-  {
-    id: 'm4',
-    role: 'assistant',
-    provider: 'claude',
-    model: 'claude-opus-5',
-    retrieval: {
-      tool: 'search_incidents',
-      mode: 'hybrid',
-      index: 'incident_events_lexical + narrative_autoembed_index',
-      query: 'fiber Dallas cascading',
-      count: 14,
-    },
-    text:
-      'I see the same cluster, plus two earlier reports in Grand Prairie ' +
-      'that look like the leading edge of it. The dig damage explanation ' +
-      'holds: all 11 affected segments trace back to one conduit run, and ' +
-      'the two Grand Prairie tickets were filed 6 minutes before the first ' +
-      'Dallas one.',
-    citations: [
-      { id: 'c4', ticketRef: 'INC-48196', city: 'Grand Prairie', category: 'infrastructure' },
-      { id: 'c5', ticketRef: 'INC-48201', city: 'Grand Prairie', category: 'infrastructure' },
-    ],
-  },
-];
-
 const EXAMPLE_PROMPTS = [
   'Which city has the most open incidents right now?',
   'Summarise the infrastructure incidents from the last hour',
@@ -104,9 +42,10 @@ let nextId = 1;
 const newId = (prefix) => `${prefix}-new-${nextId++}`;
 
 export default function ChatView() {
-  const [projects, setProjects] = useState(SAMPLE_PROJECTS);
-  const [conversations, setConversations] = useState(SAMPLE_CONVERSATIONS);
-  const [activeId, setActiveId] = useState('c-1');
+  const [projects, setProjects] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+  const [loadError, setLoadError] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(readStoredWidth);
   const [draft, setDraft] = useState('');
@@ -116,10 +55,7 @@ export default function ChatView() {
   const [provider, setProvider] = useState(DEFAULT_PROVIDER);
   const scrollRef = useRef(null);
 
-  const { messages, isStreaming, error, send, stop, reset } = useChatStream({
-    provider,
-    initialMessages: [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP],
-  });
+  const { messages, isStreaming, error, send, stop, reset } = useChatStream({ provider });
 
   // Pinned while the reader is at the bottom; released the moment they scroll
   // away. Dragging someone back down mid-sentence is the worst thing a
@@ -131,6 +67,23 @@ export default function ChatView() {
     if (!el) return;
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
     setPinned(distance < 48);
+  }, []);
+
+  // Load the sidebar once. Failures are surfaced rather than leaving an
+  // empty list that looks like "no history" when it is really "no server".
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [ps, cs] = await Promise.all([chatApi.listProjects(), chatApi.listConversations()]);
+        if (cancelled) return;
+        setProjects(ps);
+        setConversations(cs);
+      } catch (err) {
+        if (!cancelled) setLoadError(err.message);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const jumpToLatest = useCallback(() => {
@@ -150,68 +103,114 @@ export default function ChatView() {
     try { window.localStorage.setItem(WIDTH_KEY, String(px)); } catch { /* private mode */ }
   };
 
-  // Only the seeded conversation has a transcript. Selecting any other shows
-  // an empty one, which is honest until conversations are actually stored.
-  const handleSelect = (id) => {
+  const handleSelect = async (id) => {
     setActiveId(id);
-    reset(id === 'c-1' ? [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP] : []);
     setPinned(true);
+    reset([]);
+    try {
+      const conversation = await chatApi.getConversation(id);
+      reset(conversation.messages ?? []);
+    } catch (err) {
+      setLoadError(err.message);
+    }
   };
 
-  const handleNewChat = (projectId) => {
-    const conversation = {
-      id: newId('c'),
-      title: 'New chat',
-      projectId: projectId ?? null,
-      updatedAt: new Date().toISOString(),
-      provider,
-      messageCount: 0,
-    };
-    setConversations((prev) => [conversation, ...prev]);
-    setActiveId(conversation.id);
-    reset([]);
-    setDraft('');
-    setPinned(true);
+  const handleNewChat = async (projectId) => {
+    try {
+      const conversation = await chatApi.createConversation({
+        title: 'New chat',
+        projectId: projectId ?? DEFAULT_PROJECT,
+        provider,
+      });
+      setConversations((prev) => [conversation, ...prev]);
+      setActiveId(conversation.id);
+      reset([]);
+      setDraft('');
+      setPinned(true);
+    } catch (err) {
+      setLoadError(err.message);
+    }
   };
 
   // Deleting the open conversation has to leave something selected, or the
   // view shows a transcript belonging to nothing.
-  const handleDeleteChat = (id) => {
-    setConversations((prev) => {
-      const remaining = prev.filter((c) => c.id !== id);
-      if (id === activeId) {
-        const next = remaining[0] ?? null;
-        setActiveId(next?.id ?? null);
-        reset(next?.id === 'c-1' ? [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP] : []);
-      }
-      return remaining;
-    });
+  const handleDeleteChat = async (id) => {
+    try {
+      await chatApi.deleteConversation(id);
+    } catch (err) {
+      setLoadError(err.message);
+      return;
+    }
+    const remaining = conversations.filter((c) => c.id !== id);
+    setConversations(remaining);
+    if (id === activeId) {
+      const next = remaining[0] ?? null;
+      setActiveId(next?.id ?? null);
+      if (next) handleSelect(next.id); else reset([]);
+    }
   };
 
-  const handleCreateProject = (name) => {
-    setProjects((prev) => [...prev, { id: newId('p'), name }]);
+  // Filing an existing chat. PATCH with projectId: 'default' puts it back
+  // under Recent -- the gap the sidebar shipped without.
+  const handleMoveChat = async (id, projectId) => {
+    try {
+      const updated = await chatApi.updateConversation(id, { projectId });
+      setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+    } catch (err) {
+      setLoadError(err.message);
+    }
   };
 
-  const handleSubmit = (text) => {
+  const handleCreateProject = async (name) => {
+    try {
+      const project = await chatApi.createProject(name);
+      setProjects((prev) => [...prev, project]);
+    } catch (err) {
+      setLoadError(err.message);
+    }
+  };
+
+  const handleSubmit = async (text) => {
     setDraft('');
     setPinned(true);
-    send(text);
 
-    // Keep the sidebar honest: a conversation's title and recency come from
-    // what was actually said in it.
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeId
-          ? {
-              ...c,
-              title: c.messageCount === 0 ? text.slice(0, 48) : c.title,
-              updatedAt: new Date().toISOString(),
-              messageCount: c.messageCount + 2,
-              provider,
-            }
-          : c
-      )
-    );
+    // A chat has to exist before turns can be appended to it.
+    let conversationId = activeId;
+    if (!conversationId) {
+      try {
+        const conversation = await chatApi.createConversation({
+          title: text.slice(0, 48),
+          projectId: DEFAULT_PROJECT,
+          provider,
+        });
+        setConversations((prev) => [conversation, ...prev]);
+        setActiveId(conversation.id);
+        conversationId = conversation.id;
+      } catch (err) {
+        setLoadError(err.message);
+        return;
+      }
+    }
+
+    const current = conversations.find((c) => c.id === conversationId);
+    const { user, assistant } = await send(text);
+
+    // One write, after the reply finishes -- never per token. A stopped or
+    // failed reply is still worth keeping, so it is persisted either way.
+    try {
+      const updated = await chatApi.appendTurns(conversationId, {
+        turns: [user, assistant],
+        title: current && current.messageCount === 0 ? text.slice(0, 48) : undefined,
+        provider,
+      });
+      setConversations((prev) =>
+        prev
+          .map((c) => (c.id === conversationId ? { ...c, ...updated } : c))
+          .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+      );
+    } catch (err) {
+      setLoadError(err.message);
+    }
   };
 
   return (
@@ -226,6 +225,7 @@ export default function ChatView() {
         onNewChat={handleNewChat}
         onCreateProject={handleCreateProject}
         onDelete={handleDeleteChat}
+        onMove={handleMoveChat}
         width={sidebarWidth}
       />
 
@@ -276,6 +276,13 @@ export default function ChatView() {
         <button type="button" className="chat__jump" onClick={jumpToLatest}>
           Jump to latest ↓
         </button>
+      )}
+
+      {loadError && (
+        <div className="chat__error" role="alert">
+          <span>{loadError}</span>
+          <button type="button" onClick={() => setLoadError(null)}>Dismiss</button>
+        </div>
       )}
 
       {error && (

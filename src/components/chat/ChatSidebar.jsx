@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import ProjectGroup from './ProjectGroup.jsx';
-import ChatListItem from './ChatListItem.jsx';
+import { DEFAULT_PROJECT } from './conversations.js';
+
+// Always present, never created and never deletable. New chats land here when
+// no project was chosen, so the sidebar is never a blank panel with nowhere
+// obvious to put anything.
+const DEFAULT_GROUP = { id: DEFAULT_PROJECT, name: 'default' };
 
 export default function ChatSidebar({
   projects,
@@ -12,6 +17,7 @@ export default function ChatSidebar({
   onNewChat,
   onCreateProject,
   onDelete,
+  onMove,
   width,
 }) {
   const [collapsedProjects, setCollapsedProjects] = useState({});
@@ -19,17 +25,22 @@ export default function ChatSidebar({
   const [draftName, setDraftName] = useState('');
 
   const byProject = useMemo(() => {
-    const map = new Map(projects.map((p) => [p.id, []]));
+    const map = new Map([DEFAULT_GROUP, ...projects].map((p) => [p.id, []]));
     const loose = [];
     // Newest first, so the sidebar answers "what was I just doing".
     const sorted = [...conversations].sort(
       (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
     );
     for (const c of sorted) {
-      if (c.projectId && map.has(c.projectId)) map.get(c.projectId).push(c);
+      // A conversation pointing at a project that no longer exists falls back
+      // to default rather than vanishing from the list.
+      if (map.has(c.projectId)) map.get(c.projectId).push(c);
       else loose.push(c);
     }
-    return { map, loose };
+    // Anything orphaned joins default rather than forming a second unfiled
+    // bucket alongside it.
+    if (loose.length) map.get(DEFAULT_PROJECT).push(...loose);
+    return { map };
   }, [projects, conversations]);
 
   const toggleProject = (id) =>
@@ -77,7 +88,7 @@ export default function ChatSidebar({
 
       <div className="chat-side__scroll">
         <div className="chat-side__section-head">
-          <span>Projects</span>
+          <span>Chats</span>
           <button
             type="button"
             className="chat-side__section-add"
@@ -104,44 +115,23 @@ export default function ChatSidebar({
           />
         )}
 
-        {projects.length === 0 && !creating && (
-          <p className="chat-side__empty-group">No projects yet</p>
-        )}
-
-        {projects.map((p) => (
+        {[DEFAULT_GROUP, ...projects].map((p) => (
           <ProjectGroup
             key={p.id}
             project={p}
             conversations={byProject.map.get(p.id) ?? []}
+            isDefault={p.id === DEFAULT_PROJECT}
             collapsed={!!collapsedProjects[p.id]}
             activeId={activeId}
             onToggle={toggleProject}
             onSelect={onSelect}
             onNewChat={onNewChat}
             onDelete={onDelete}
+            onMove={onMove}
+            projects={projects}
           />
         ))}
 
-        {/* Loose chats are the norm, not an edge case -- most conversations
-            never get filed anywhere. */}
-        <div className="chat-side__section-head chat-side__section-head--plain">
-          <span>Recent</span>
-        </div>
-        <div className="chat-side__items">
-          {byProject.loose.length === 0 ? (
-            <p className="chat-side__empty-group">Nothing unfiled</p>
-          ) : (
-            byProject.loose.map((c) => (
-              <ChatListItem
-                key={c.id}
-                conversation={c}
-                active={c.id === activeId}
-                onSelect={onSelect}
-                onDelete={onDelete}
-              />
-            ))
-          )}
-        </div>
       </div>
     </aside>
   );

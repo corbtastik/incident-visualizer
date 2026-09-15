@@ -8,7 +8,8 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/live": "http://localhost:4000",
-      "/search": "http://localhost:4000"
+      "/search": "http://localhost:4000",
+      "/chat": "http://localhost:4000"
     }
   }
 });

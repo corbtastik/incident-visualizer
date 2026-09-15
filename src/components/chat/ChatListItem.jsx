@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { relativeTime } from './conversations.js';
+import { relativeTime, DEFAULT_PROJECT } from './conversations.js';
 import { providerLabel } from './providers.js';
 
 // The row is a wrapper rather than a single button: a delete control cannot
 // be nested inside the select button, and making the whole row a div with a
 // click handler would lose keyboard and focus behaviour.
-export default function ChatListItem({ conversation, active, onSelect, onDelete }) {
-  const { id, title, updatedAt, provider } = conversation;
+export default function ChatListItem({ conversation, active, onSelect, onDelete, onMove, projects = [] }) {
+  const { id, title, updatedAt, provider, projectId } = conversation;
   const [confirming, setConfirming] = useState(false);
 
   // Two steps rather than one. A mis-click in a list is easy, and a deleted
@@ -37,6 +37,25 @@ export default function ChatListItem({ conversation, active, onSelect, onDelete 
         </span>
         {!confirming && <span className="chat-side__item-time">{relativeTime(updatedAt)}</span>}
       </button>
+
+      {/* Filing an existing chat. A select rather than a menu: it is compact,
+          keyboard-accessible for free, and ViewNavigator already ignores
+          SELECT so arrow keys will not also switch views. */}
+      {onMove && !confirming && (
+        <select
+          className="chat-side__move"
+          value={projectId ?? DEFAULT_PROJECT}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => onMove(id, e.target.value || DEFAULT_PROJECT)}
+          title="Move to project"
+          aria-label={`Move ${title} to a project`}
+        >
+          <option value={DEFAULT_PROJECT}>default</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      )}
 
       <button
         type="button"

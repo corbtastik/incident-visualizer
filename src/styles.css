@@ -2451,3 +2451,41 @@ body.is-resizing {
 }
 
 .chat__error button:hover { border-color: var(--blue); }
+
+/* Move-to-project. Quiet until the row is hovered, like the delete control. */
+.chat-side__move {
+  flex: 0 0 auto;
+  max-width: 26px;
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  padding: 0 4px;
+  transition: opacity 0.12s ease, color 0.12s ease;
+  /* a folder-ish caret, since the select text itself is clipped */
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 9px center, right 4px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  color: transparent;            /* hide the option label, keep the caret */
+}
+
+.chat-side__row:hover .chat-side__move,
+.chat-side__move:focus-visible { opacity: 1; }
+
+.chat-side__move:hover { background: var(--row-bg); }
+
+.chat-side__move option { color: var(--fg); background: var(--panel); }
+
+/* The default group is always there and cannot be removed, so it is styled a
+   shade quieter than the projects the user made. */
+.chat-side__group--default .chat-side__group-name {
+  color: var(--muted);
+  font-weight: 500;
+}

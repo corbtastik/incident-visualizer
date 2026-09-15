@@ -4,8 +4,9 @@
 //   project      { id, name }
 //   conversation { id, title, projectId, updatedAt, provider, messageCount }
 //
-// projectId === null means the conversation is loose -- not in any project.
-// That is a real state, not a placeholder: most chats never get filed.
+// projectId === DEFAULT_PROJECT means the conversation is unfiled. That is a
+// real state, not a placeholder: most chats never get filed anywhere.
+export const DEFAULT_PROJECT = 'default';
 
 export const SAMPLE_PROJECTS = [
   { id: 'p-dallas', name: 'Dallas fiber event' },
@@ -40,7 +41,7 @@ export const SAMPLE_CONVERSATIONS = [
   {
     id: 'c-4',
     title: 'Repair crews dispatched today',
-    projectId: null,
+    projectId: DEFAULT_PROJECT,
     updatedAt: '2026-09-15T11:04:00Z',
     provider: 'openai',
     messageCount: 3,
@@ -48,7 +49,7 @@ export const SAMPLE_CONVERSATIONS = [
   {
     id: 'c-5',
     title: 'Anything with photos attached?',
-    projectId: null,
+    projectId: DEFAULT_PROJECT,
     updatedAt: '2026-09-13T16:45:00Z',
     provider: 'claude',
     messageCount: 8,

@@ -10,9 +10,12 @@ export default function ProjectGroup({
   onSelect,
   onNewChat,
   onDelete,
+  onMove,
+  projects,
+  isDefault,
 }) {
   return (
-    <section className="chat-side__group">
+    <section className={`chat-side__group ${isDefault ? 'chat-side__group--default' : ''}`}>
       <div className="chat-side__group-header">
         <button
           type="button"
@@ -50,6 +53,8 @@ export default function ProjectGroup({
                 active={c.id === activeId}
                 onSelect={onSelect}
                 onDelete={onDelete}
+                onMove={onMove}
+                projects={projects}
               />
             ))
           )}

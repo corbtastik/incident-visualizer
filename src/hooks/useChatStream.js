@@ -49,22 +49,31 @@ export function useChatStream({ provider, transport = mockTransport, initialMess
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Accumulated locally as well as in state: the caller needs the finished
+    // turns to persist them, and reading them back out of state after an
+    // await would see whatever the closure captured, not the final value.
+    let assistant = { ...assistantTurn };
+    const track = (patch) => {
+      assistant = typeof patch === 'function' ? patch(assistant) : { ...assistant, ...patch };
+      patchLast(patch);
+    };
+
     try {
       for await (const event of transport({ prompt: text, provider, signal: controller.signal })) {
         switch (event.type) {
           case 'retrieval':
-            patchLast({ retrieval: event.retrieval });
+            track({ retrieval: event.retrieval });
             break;
           case 'token':
             // Appended rather than replaced, so React re-renders one growing
             // string instead of rebuilding the turn on every token.
-            patchLast((last) => ({ ...last, text: last.text + event.text }));
+            track((last) => ({ ...last, text: last.text + event.text }));
             break;
           case 'citations':
-            patchLast({ citations: event.citations });
+            track({ citations: event.citations });
             break;
           case 'done':
-            patchLast({ streaming: false, model: event.model });
+            track({ streaming: false, model: event.model });
             break;
           default:
             break;
@@ -73,15 +82,17 @@ export function useChatStream({ provider, transport = mockTransport, initialMess
     } catch (err) {
       if (err?.name === 'AbortError') {
         // Stopping is a choice, not a failure. The partial answer stays.
-        patchLast({ streaming: false, stopped: true });
+        track({ streaming: false, stopped: true });
       } else {
         setError(err?.message ?? 'something went wrong');
-        patchLast({ streaming: false, failed: true });
+        track({ streaming: false, failed: true });
       }
     } finally {
       setStreaming(false);
       abortRef.current = null;
     }
+
+    return { user: userTurn, assistant };
   }, [isStreaming, provider, transport, patchLast]);
 
   const stop = useCallback(() => {
