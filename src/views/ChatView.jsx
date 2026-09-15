@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 
 import MessageList from '../components/chat/MessageList.jsx';
 import Composer from '../components/chat/Composer.jsx';
+import ProviderSelector from '../components/chat/ProviderSelector.jsx';
+import { DEFAULT_PROVIDER } from '../components/chat/providers.js';
 
 // Phase 1 is the shell: layout, styling and scroll behaviour, driven by a
 // static transcript. The streaming hook replaces this in phase 2, so the
@@ -16,6 +18,8 @@ const SAMPLE_TRANSCRIPT = [
   {
     id: 'm2',
     role: 'assistant',
+    provider: 'orbit',
+    model: 'orbit-1',
     retrieval: {
       tool: 'search_incidents',
       mode: 'vector',
@@ -37,6 +41,37 @@ const SAMPLE_TRANSCRIPT = [
   },
 ];
 
+const SAMPLE_FOLLOW_UP = [
+  {
+    id: 'm3',
+    role: 'user',
+    text: 'Ask Claude the same thing.',
+  },
+  {
+    id: 'm4',
+    role: 'assistant',
+    provider: 'claude',
+    model: 'claude-opus-5',
+    retrieval: {
+      tool: 'search_incidents',
+      mode: 'hybrid',
+      index: 'incident_events_lexical + narrative_autoembed_index',
+      query: 'fiber Dallas cascading',
+      count: 14,
+    },
+    text:
+      'I see the same cluster, plus two earlier reports in Grand Prairie ' +
+      'that look like the leading edge of it. The dig damage explanation ' +
+      'holds: all 11 affected segments trace back to one conduit run, and ' +
+      'the two Grand Prairie tickets were filed 6 minutes before the first ' +
+      'Dallas one.',
+    citations: [
+      { id: 'c4', ticketRef: 'INC-48196', city: 'Grand Prairie', category: 'infrastructure' },
+      { id: 'c5', ticketRef: 'INC-48201', city: 'Grand Prairie', category: 'infrastructure' },
+    ],
+  },
+];
+
 const EXAMPLE_PROMPTS = [
   'Which city has the most open incidents right now?',
   'Summarise the infrastructure incidents from the last hour',
@@ -45,8 +80,12 @@ const EXAMPLE_PROMPTS = [
 ];
 
 export default function ChatView() {
-  const [messages] = useState(SAMPLE_TRANSCRIPT);
+  const [messages] = useState([...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP]);
   const [draft, setDraft] = useState('');
+  // Switching provider changes what the *next* turn uses. The transcript is
+  // deliberately untouched: a conversation that spans several models is the
+  // interesting case, not an accident to guard against.
+  const [provider, setProvider] = useState(DEFAULT_PROVIDER);
   const scrollRef = useRef(null);
 
   // Pin to the newest turn on mount. Phase 2 makes this conditional on the
@@ -58,7 +97,7 @@ export default function ChatView() {
 
   const handleSubmit = (text) => {
     // Wired to the streaming hook in phase 2.
-    console.info('[chat] submit (not yet wired):', text);
+    console.info('[chat] submit (not yet wired):', { provider, text });
     setDraft('');
   };
 
@@ -71,9 +110,12 @@ export default function ChatView() {
             Ask about live incidents, repairs and media across the fleet
           </p>
         </div>
-        <div className="chat__context" title="What the assistant can search">
-          <span className="chat__context-dot" />
-          incidents · fix events · media
+        <div className="chat__header-controls">
+          <div className="chat__context" title="What the assistant can search">
+            <span className="chat__context-dot" />
+            incidents · fix events · media
+          </div>
+          <ProviderSelector value={provider} onChange={setProvider} />
         </div>
       </header>
 

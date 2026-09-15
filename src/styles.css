@@ -1971,3 +1971,93 @@ select {
   color: var(--fg);
   border-color: var(--border);
 }
+
+/* --- provider selection and provenance -------------------------------- */
+
+.chat__header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.chat__provider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+}
+
+.chat__provider-label {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.chat__provider-select {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 24px 4px 4px;
+  cursor: pointer;
+  /* room for the chevron drawn below */
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: right 10px center, right 5px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.chat__provider-select:focus {
+  outline: none;
+  color: var(--blue);
+}
+
+/* The option list is drawn by the OS, so it does not inherit the dark
+   theme -- set a readable pairing explicitly. */
+.chat__provider-select option {
+  background: var(--panel);
+  color: var(--fg);
+}
+
+/* Which model produced a turn. The transcript survives a provider switch,
+   so a single conversation can hold answers from several. */
+.chat-msg__provider {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.chat-msg__provider-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.chat-msg__provider-dot--orbit  { background: #7c5cff; }
+.chat-msg__provider-dot--claude { background: #d97757; }
+.chat-msg__provider-dot--gemini { background: #4285f4; }
+.chat-msg__provider-dot--openai { background: #10a37f; }
+
+.chat-msg__model {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  opacity: 0.7;
+}

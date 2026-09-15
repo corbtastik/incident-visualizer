@@ -61,7 +61,12 @@ export default function ViewNavigator({ children }) {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      // Any control that consumes keys itself. SELECT matters as much as the
+      // text ones: without it, arrow keys would change the provider *and*
+      // jump to the next view.
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.target.isContentEditable) return;
 
       switch (e.key) {
         case 'Escape':
