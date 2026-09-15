@@ -67,6 +67,8 @@ export default function ViewNavigator({ children }) {
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (e.target.isContentEditable) return;
+      // Controls that handle their own keys -- the sidebar divider, for one.
+      if (e.target.closest?.('[data-owns-keys]')) return;
 
       switch (e.key) {
         case 'Escape':

@@ -3,7 +3,13 @@ import React, { useRef, useEffect, useState } from 'react';
 import MessageList from '../components/chat/MessageList.jsx';
 import Composer from '../components/chat/Composer.jsx';
 import ProviderSelector from '../components/chat/ProviderSelector.jsx';
+import ChatSidebar from '../components/chat/ChatSidebar.jsx';
+import SidebarResizer, {
+  SIDEBAR_DEFAULT,
+  clampSidebarWidth,
+} from '../components/chat/SidebarResizer.jsx';
 import { DEFAULT_PROVIDER } from '../components/chat/providers.js';
+import { SAMPLE_PROJECTS, SAMPLE_CONVERSATIONS } from '../components/chat/conversations.js';
 
 // Phase 1 is the shell: layout, styling and scroll behaviour, driven by a
 // static transcript. The streaming hook replaces this in phase 2, so the
@@ -79,8 +85,29 @@ const EXAMPLE_PROMPTS = [
   'Show me incidents with photos attached',
 ];
 
+// Remembered across reloads: a width you chose once should not be something
+// you re-drag every session.
+const WIDTH_KEY = 'incident.chat.sidebarWidth';
+
+function readStoredWidth() {
+  try {
+    const raw = window.localStorage.getItem(WIDTH_KEY);
+    return raw ? clampSidebarWidth(Number(raw)) : SIDEBAR_DEFAULT;
+  } catch {
+    return SIDEBAR_DEFAULT;
+  }
+}
+
+let nextId = 1;
+const newId = (prefix) => `${prefix}-new-${nextId++}`;
+
 export default function ChatView() {
-  const [messages] = useState([...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP]);
+  const [messages, setMessages] = useState([...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP]);
+  const [projects, setProjects] = useState(SAMPLE_PROJECTS);
+  const [conversations, setConversations] = useState(SAMPLE_CONVERSATIONS);
+  const [activeId, setActiveId] = useState('c-1');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(readStoredWidth);
   const [draft, setDraft] = useState('');
   // Switching provider changes what the *next* turn uses. The transcript is
   // deliberately untouched: a conversation that spans several models is the
@@ -95,6 +122,51 @@ export default function ChatView() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+  const handleResize = (px) => {
+    setSidebarWidth(px);
+    try { window.localStorage.setItem(WIDTH_KEY, String(px)); } catch { /* private mode */ }
+  };
+
+  // Only the seeded conversation has a transcript. Selecting any other shows
+  // an empty one, which is honest until conversations are actually stored.
+  const handleSelect = (id) => {
+    setActiveId(id);
+    setMessages(id === 'c-1' ? [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP] : []);
+  };
+
+  const handleNewChat = (projectId) => {
+    const conversation = {
+      id: newId('c'),
+      title: 'New chat',
+      projectId: projectId ?? null,
+      updatedAt: new Date().toISOString(),
+      provider,
+      messageCount: 0,
+    };
+    setConversations((prev) => [conversation, ...prev]);
+    setActiveId(conversation.id);
+    setMessages([]);
+    setDraft('');
+  };
+
+  // Deleting the open conversation has to leave something selected, or the
+  // view shows a transcript belonging to nothing.
+  const handleDeleteChat = (id) => {
+    setConversations((prev) => {
+      const remaining = prev.filter((c) => c.id !== id);
+      if (id === activeId) {
+        const next = remaining[0] ?? null;
+        setActiveId(next?.id ?? null);
+        setMessages(next?.id === 'c-1' ? [...SAMPLE_TRANSCRIPT, ...SAMPLE_FOLLOW_UP] : []);
+      }
+      return remaining;
+    });
+  };
+
+  const handleCreateProject = (name) => {
+    setProjects((prev) => [...prev, { id: newId('p'), name }]);
+  };
+
   const handleSubmit = (text) => {
     // Wired to the streaming hook in phase 2.
     console.info('[chat] submit (not yet wired):', { provider, text });
@@ -103,6 +175,28 @@ export default function ChatView() {
 
   return (
     <div className="chat-view">
+      <ChatSidebar
+        projects={projects}
+        conversations={conversations}
+        activeId={activeId}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
+        onSelect={handleSelect}
+        onNewChat={handleNewChat}
+        onCreateProject={handleCreateProject}
+        onDelete={handleDeleteChat}
+        width={sidebarWidth}
+      />
+
+      {!sidebarCollapsed && (
+        <SidebarResizer
+          width={sidebarWidth}
+          onResize={handleResize}
+          onReset={() => handleResize(SIDEBAR_DEFAULT)}
+        />
+      )}
+
+      <div className="chat__main">
       <header className="chat__header">
         <div>
           <h1>Incident Assistant</h1>
@@ -143,6 +237,7 @@ export default function ChatView() {
         onSubmit={handleSubmit}
         disabled={false}
       />
+      </div>
     </div>
   );
 }
