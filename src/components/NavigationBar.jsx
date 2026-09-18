@@ -44,6 +44,19 @@ export default function NavigationBar({ views, currentView, onNavigate }) {
               <path d="M21 21l-4.35-4.35" />
             </svg>
           )}
+          {view.id === 'chat' && (
+            /* A speech bubble says "conversation"; the sparkle says the thing
+               on the other end is a model. Either alone is ambiguous here --
+               a bare bubble reads as comments, a bare sparkle as "magic".
+               The bubble is shortened on its upper right so the sparkle sits
+               in cleared space rather than crossing the stroke, which is what
+               keeps both legible at the 18px these render at. */
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 13.5a7.5 7.5 0 0 1-7.5 7.5 7.4 7.4 0 0 1-3.35-.79L4 21.5l1.29-4.15A7.4 7.4 0 0 1 4.5 14 7.5 7.5 0 0 1 12 6.5h1" />
+              <path d="M18.5 2v5" />
+              <path d="M16 4.5h5" />
+            </svg>
+          )}
           <span>{view.label}</span>
         </button>
       ))}
