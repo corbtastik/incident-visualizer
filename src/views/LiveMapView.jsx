@@ -11,10 +11,7 @@ import { useCategoryFeed } from '../hooks/useCategoryFeed';
 import { makeCategoryScatterLayers, makeSearchResultLayers } from '../layers/index.js';
 import TooltipIncident from '../components/TooltipIncident.jsx';
 
-const DARK =
-  import.meta.env.VITE_MAP_STYLE_URL ||
-  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-const LIGHT = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+const MAP_STYLE = import.meta.env.VITE_MAP_STYLE_URL || '/brand/map/incident-slate.json';
 
 const slugify = (s) =>
   String(s || '')
@@ -38,7 +35,6 @@ export default function LiveMapView({ apiBase }) {
   const [state, setState] = useState({
     layer: 'heatmap',
     radius: 50,
-    baseMap: 'dark',
     colorRamp: 'cool',
     types: new Set(),
     categories: {
@@ -247,8 +243,6 @@ export default function LiveMapView({ apiBase }) {
     }, 0);
   }, [dataForRender, state.types, state.categories]);
 
-  const styleUrl = state.baseMap === 'dark' ? DARK : LIGHT;
-
   return (
     <div className="live-map-view">
       <SearchBar
@@ -301,7 +295,7 @@ export default function LiveMapView({ apiBase }) {
             }
           }}
         >
-          <Map reuseMaps mapLib={maplibregl} mapStyle={styleUrl} />
+          <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} />
 
           {hoverInfo?.object && (
             <TooltipIncident

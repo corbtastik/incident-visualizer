@@ -56,7 +56,7 @@ const SEARCH_MODES = [
 ];
 
 export default function ControlPanel({ state, setState, onResetView, searchMode, onSearchModeChange }) {
-  const { layer, radius, baseMap, colorRamp, types, categories } = state;
+  const { layer, radius, colorRamp, types, categories } = state;
 
   const flatByOrder = useMemo(() => GROUPS.flatMap(g => g.items), []);
   const allCatsOn   = useMemo(() => GROUPS.every(g => categories[g.key]), [categories]);
@@ -101,18 +101,6 @@ export default function ControlPanel({ state, setState, onResetView, searchMode,
                 value={radius}
                 onChange={e=>setState(s=>({...s, radius:Number(e.target.value)}))}
               />
-            </label>
-
-            <label>
-              <span>Base Map</span>
-              <select
-                className="w-full"
-                value={baseMap}
-                onChange={e=>setState(s=>({...s, baseMap:e.target.value}))}
-              >
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
-              </select>
             </label>
 
             {onResetView && (

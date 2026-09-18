@@ -30,9 +30,7 @@ function formatTime(timestamp) {
   });
 }
 
-const DARK =
-  import.meta.env.VITE_MAP_STYLE_URL ||
-  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const MAP_STYLE = import.meta.env.VITE_MAP_STYLE_URL || '/brand/map/incident-slate.json';
 
 // Thermal color ramp: blue -> cyan -> green -> yellow -> orange -> red
 const COLOR_RANGE = [
@@ -487,7 +485,7 @@ export default function HeatmapView({ apiBase }) {
             }
           }}
         >
-          <Map reuseMaps mapLib={maplibregl} mapStyle={DARK} />
+          <Map reuseMaps mapLib={maplibregl} mapStyle={MAP_STYLE} />
 
           {hoverInfo?.object && (
             <TooltipIncident

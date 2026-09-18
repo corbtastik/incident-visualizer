@@ -44,8 +44,9 @@
   --code-null:    var(--mdb-gray-base);
 }
 
-:root,
-[data-theme='dark'] {
+/* The app is dark, permanently -- there is no light theme and no toggle.
+   See src/brand/README.md. Every value comes from a LeafyGreen ramp. */
+:root {
   --bg:      var(--mdb-black);        /* #001E2B Slate Blue */
   --panel:   var(--mdb-gray-dark4);   /* #112733 */
   --panel-2: var(--mdb-gray-dark3);   /* #21313C -- surfaces nested in a panel */
@@ -54,21 +55,20 @@
   --border:  var(--mdb-gray-dark3);   /* #21313C */
 
   /* Spring Green is bright enough that anything sitting on it takes Slate
-     ink rather than white -- which is the brand's own treatment for CTAs
-     on dark sections. */
+     ink rather than white -- the brand's own treatment for CTAs on dark
+     sections. */
   --accent:       var(--mdb-green-base);    /* #00ED64 Spring Green */
   --accent-hover: var(--mdb-green-light1);  /* #71F6BA */
   --accent-fg:    var(--mdb-black);
   --accent-soft:  rgba(0, 237, 100, 0.14);  /* tinted fills and hover washes */
 
-  /* The pack's elevation scale is tuned for slate shadows on white. On a
-     slate page there is nothing left in the ramp to cast with, so these
-     keep the brand's geometry and hue and carry it below the page color. */
+  /* The pack's elevation scale casts slate onto white. On a slate page
+     there is nothing left in the ramp to cast with, so these keep the
+     brand's geometry and hue and carry it below the page colour. */
   --elev-1: 0 1px 2px  rgba(0, 12, 17, 0.40);
   --elev-2: 0 2px 6px  rgba(0, 12, 17, 0.44);
   --elev-3: 0 8px 24px rgba(0, 12, 17, 0.48);
 
-  /* Status. The light tiers read on slate; the base tiers do not. */
   /* Raised and recessed surfaces drawn on top of a panel. Translucent so
      they hold up over the map, tinted rather than pure white or black. */
   --wash:         rgba(232, 237, 235, 0.06);
@@ -76,44 +76,12 @@
   --sunken:       rgba(0, 12, 17, 0.35);
   --sunken-hover: rgba(0, 12, 17, 0.50);
 
+  /* Status. The light tiers read on slate; the base tiers do not. */
   --danger:  var(--mdb-red-light1);     /* #FF6960 */
   --warning: var(--mdb-yellow-base);    /* #FFC010 */
   --info:    var(--mdb-blue-light1);    /* #0498EC */
   --ai:      var(--mdb-purple-base);    /* #B45AF2 -- the brand's AI accent */
   --success: var(--mdb-green-light1);   /* #71F6BA */
-}
-
-[data-theme='light'] {
-  --bg:      var(--mdb-gray-light3);  /* #F9FBFA */
-  --panel:   var(--mdb-white);
-  --panel-2: var(--mdb-gray-light3);
-  --fg:      var(--mdb-black);
-  --muted:   var(--mdb-gray-dark1);   /* #5C6C75 */
-  --border:  var(--mdb-gray-light2);  /* #E8EDEB */
-
-  /* Light mode gets the product-UI primary instead: Forest Green, white
-     text. Spring Green on white is not readable as a button. */
-  --accent:       var(--mdb-green-dark2);   /* #00684A Forest Green */
-  --accent-hover: var(--mdb-green-dark3);   /* #023430 Evergreen */
-  --accent-fg:    var(--mdb-white);
-  --accent-soft:  var(--mdb-green-light3);  /* #E3FCF7 Mist */
-
-  --elev-1: var(--shadow-100);
-  --elev-2: var(--shadow-200);
-  --elev-3: var(--shadow-300);
-
-  /* On white the same roles are solid greys -- the brand's own treatment
-     for icon-button washes and inset surfaces. */
-  --wash:         var(--mdb-gray-light3);
-  --wash-hover:   var(--mdb-gray-light2);
-  --sunken:       var(--mdb-gray-light3);
-  --sunken-hover: var(--mdb-gray-light2);
-
-  --danger:  var(--mdb-red-base);     /* #DB3030 */
-  --warning: var(--mdb-yellow-dark2); /* #944F01 -- yellow needs darkening on white */
-  --info:    var(--mdb-blue-base);    /* #016BF8 */
-  --ai:      var(--mdb-purple-dark2); /* #5E0C9E */
-  --success: var(--mdb-green-dark2);  /* #00684A */
 }
 
 /* Focus. The brand ring is translucent rather than a hard outline, and it
