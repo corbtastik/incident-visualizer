@@ -2,16 +2,16 @@ import React, { useMemo, useState } from "react";
 import { useCategoryFeed } from "../hooks/useCategoryFeed";
 import { CAT_COLOR } from "../layers/index.js";
 
+// The colour comes from the theme rather than a literal, so the dot tracks
+// the status tokens the rest of the app uses.
+const DOT_TOKEN = { ok: "--success", idle: "--warning" };
+
 function Dot({ status }) {
-  const color =
-    status === "ok" ? "#16a34a" :
-    status === "idle" ? "#f59e0b" :
-    "#ef4444";
   return (
-    <span style={{
-      display: "inline-block", width: 10, height: 10, borderRadius: 9999,
-      background: color, boxShadow: `0 0 8px ${color}`, marginRight: 8
-    }}/>
+    <span
+      className="feed-dot"
+      style={{ color: `var(${DOT_TOKEN[status] ?? "--danger"})` }}
+    />
   );
 }
 
@@ -31,15 +31,15 @@ function highlightJSON(obj) {
 
 function LastEventCard({ title, doc }) {
   return (
-    <div className="rounded-xl bg-black/30 border border-white/10 p-3 mt-2">
-      <div className="text-xs uppercase tracking-wide opacity-70 mb-1">{title}</div>
+    <div className="feed-card">
+      <div className="feed-card__title">{title}</div>
       {doc ? (
         <pre
-          className="text-[11px] leading-4 font-mono whitespace-pre-wrap break-words code synth84"
+          className="code"
           dangerouslySetInnerHTML={{ __html: highlightJSON(doc) }}
         />
       ) : (
-        <div className="text-xs opacity-60">No events yet.</div>
+        <div className="feed-card__empty">No events yet.</div>
       )}
     </div>
   );
@@ -114,8 +114,8 @@ function Donut({ parts }) {
             pointerEvents: "none"         // don't steal hover
           }}
         >
-          <div className="font-semibold">{hover.label}</div>
-          <div className="text-sm">{hover.pct}%</div>
+          <div className="incident-tooltip__title">{hover.label}</div>
+          <div className="incident-tooltip__row">{hover.pct}%</div>
         </div>
       )}
     </div>
@@ -181,7 +181,7 @@ export default function LiveFeeds({ apiBase }) {
       <div className="right-dock__panel rf-grid-scroll">
         {/* Header (fixed) */}
         <div className="cp-header">
-          <div className="text-sm font-semibold">Live Feeds</div>
+          <div className="cp-header__title">Live feeds</div>
         </div>
 
         {/* Scroll area: contains ALL feed cards + pie card, so they scroll together */}
@@ -189,55 +189,55 @@ export default function LiveFeeds({ apiBase }) {
           {feeds.map(({ key, label, hook }) => (
             <div key={key} className="mb-3 last:mb-0">
               <div
-                className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg px-1 py-1 -mx-1 transition-colors"
+                className="feed-row"
                 onClick={() => toggleExpand(key)}
               >
                 <div className="flex items-center gap-1">
                   <Chevron expanded={expanded[key]} />
                   <Dot status={hook.status} />
-                  <span className="text-sm">{label}</span>
+                  <span className="feed-row__label">{label}</span>
                 </div>
-                <div className="text-xs text-neutral-400">
-                  Size: <span className="font-mono text-neutral-200">{hook.count}</span>
+                <div className="feed-row__meta">
+                  Size: <span className="feed-row__count">{hook.count}</span>
                 </div>
               </div>
               {expanded[key] && (
                 <LastEventCard title="Last Event" doc={hook.lastEventPreview} />
               )}
               {hook.status === "error" && (
-                <div className="mt-1 text-[11px] text-red-400">{hook.error}</div>
+                <div className="feed-row__error">{hook.error}</div>
               )}
             </div>
           ))}
 
           {/* Pie card (same look as others, centered) */}
-          <div className="rounded-xl bg-black/30 border border-white/10 p-3 mb-3 last:mb-0">
+          <div className="feed-card feed-card--chart">
             <Donut parts={pieParts} />
           </div>
         </div>
 
         {/* Footer (fixed) */}
         <div className="rf-footer">
-          <div className="flex flex-col gap-1 text-sm">
-            <div className="flex items-baseline justify-between">
-              <span className="text-neutral-400">Repairs Started:</span>
-              <span className="font-mono font-semibold text-amber-400">
+          <dl className="feed-stats">
+            <div className="feed-stats__row">
+              <dt>Repairs started</dt>
+              <dd className="feed-stats__value feed-stats__value--pending">
                 {totalRepairsStarted.toLocaleString()}
-              </span>
+              </dd>
             </div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-neutral-400">Repairs Completed:</span>
-              <span className="font-mono font-semibold text-green-400">
+            <div className="feed-stats__row">
+              <dt>Repairs completed</dt>
+              <dd className="feed-stats__value feed-stats__value--done">
                 {totalRepairsCompleted.toLocaleString()}
-              </span>
+              </dd>
             </div>
-            <div className="flex items-baseline justify-between pt-1 border-t border-white/10">
-              <span className="text-neutral-400">Total:</span>
-              <span className="font-mono font-semibold" style={{ color: "#ef4444" }}>
+            <div className="feed-stats__row feed-stats__row--total">
+              <dt>Total</dt>
+              <dd className="feed-stats__value">
                 {total.toLocaleString()}
-              </span>
+              </dd>
             </div>
-          </div>
+          </dl>
         </div>
       </div>
     </aside>

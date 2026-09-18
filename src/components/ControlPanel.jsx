@@ -21,12 +21,7 @@ function pretty(label) {
   return label.replace(/\b\w/g, c => c.toUpperCase()).replace('-', ' ');
 }
 
-const Divider = () => (
-  <div
-    className="cp-divider"
-    style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '12px 0' }}
-  />
-);
+const Divider = () => <div className="cp-divider" />;
 
 // Match Live Feeds indicator: 10x10 + subtle glow
 function Dot({ rgba }) {
