@@ -1772,8 +1772,10 @@ select {
   font-size: 14px;
   line-height: 1.65;
   color: var(--fg);
-  white-space: pre-wrap;
 }
+
+/* pre-wrap is gone deliberately: markdown emits real block elements, and
+   preserving source newlines on top of them doubles every paragraph gap. */
 
 /* Blinking caret while tokens are still arriving. */
 .chat-msg__caret {
@@ -2057,6 +2059,9 @@ select {
 }
 
 .chat-msg__provider-dot--orbit  { background: #7c5cff; }
+
+/* Retained so conversations stored before OrbitAI became the only provider
+   still render with their own colour rather than a grey default. */
 .chat-msg__provider-dot--claude { background: #d97757; }
 .chat-msg__provider-dot--gemini { background: #4285f4; }
 .chat-msg__provider-dot--openai { background: #10a37f; }
@@ -2489,3 +2494,149 @@ body.is-resizing {
   color: var(--muted);
   font-weight: 500;
 }
+
+/* --- activity indicator ------------------------------------------------- */
+
+/* Sits above the composer while a reply is in flight. Answers run 45-90
+   seconds across 20+ tool calls, so "something is happening" has to be
+   visible or a healthy run looks identical to a hung one. */
+.chat__activity {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: center;
+  width: 100%;
+  max-width: 780px;
+  margin: 0 24px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 12px;
+  color: var(--muted);
+  box-sizing: border-box;
+}
+
+.chat__activity-spinner {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: chat-spin 0.7s linear infinite;
+}
+
+@keyframes chat-spin { to { transform: rotate(360deg); } }
+
+.chat__activity-label { color: var(--fg); }
+
+.chat__activity-label code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--blue);
+}
+
+.chat__activity-count { opacity: 0.8; }
+
+.chat__activity-elapsed {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- rendered markdown -------------------------------------------------- */
+
+.chat-md > *:first-child { margin-top: 0; }
+.chat-md > *:last-child  { margin-bottom: 0; }
+
+.chat-md p { margin: 0 0 12px; }
+
+.chat-md h1, .chat-md h2, .chat-md h3, .chat-md h4 {
+  margin: 18px 0 8px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--fg);
+}
+
+.chat-md h1 { font-size: 18px; }
+.chat-md h2 { font-size: 16px; }
+.chat-md h3 { font-size: 14px; }
+.chat-md h4 { font-size: 13px; color: var(--muted); }
+
+.chat-md ul, .chat-md ol { margin: 0 0 12px; padding-left: 22px; }
+.chat-md li { margin: 3px 0; }
+.chat-md li > p { margin: 0; }          /* loose lists should not double-space */
+
+.chat-md strong { font-weight: 700; color: var(--fg); }
+
+.chat-md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--row-bg);
+  border: 1px solid var(--border);
+}
+
+.chat-md pre {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--row-bg);
+  overflow-x: auto;
+}
+
+/* Inside a block, the border and background belong to the <pre>. */
+.chat-md pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.chat-md blockquote {
+  margin: 0 0 12px;
+  padding: 2px 0 2px 12px;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+
+.chat-md hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 18px 0;
+}
+
+/* Tables are routinely wider than the 780px column, so they scroll inside
+   their own box rather than stretching the transcript. */
+.chat-md__table-wrap {
+  margin: 0 0 12px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.chat-md table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+.chat-md th, .chat-md td {
+  padding: 7px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.chat-md thead th {
+  background: var(--row-bg);
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.chat-md tbody tr:last-child td { border-bottom: 0; }
+
+/* Numeric columns line up when the digits are tabular. */
+.chat-md td { font-variant-numeric: tabular-nums; }

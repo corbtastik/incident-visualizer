@@ -16,28 +16,13 @@
 
 const TOKEN_MS = 18;
 
-const REPLIES = {
-  orbit:
-    'Twelve fiber incidents are open around Dallas. Nine share a root cause ' +
-    'of third-party dig damage on the same plant segment, and the timing ' +
-    'fits a single upstream break rather than unrelated failures — the ' +
-    'first was reported 42 minutes ago and the rest followed within fifteen.',
-  claude:
-    'I count twelve open fiber incidents in the Dallas area. Nine trace back ' +
-    'to one conduit run, with dig damage recorded as the root cause. Two ' +
-    'earlier tickets in Grand Prairie look like the leading edge of the same ' +
-    'event — they were filed six minutes before the first Dallas report.',
-  gemini:
-    'There are 12 open fiber incidents near Dallas. The majority (9) are ' +
-    'attributed to third-party dig damage affecting a shared plant segment. ' +
-    'Reported times cluster within a 15-minute window, which is consistent ' +
-    'with one upstream break.',
-  openai:
-    'Dallas currently has 12 open fiber incidents. Nine of them reference the ' +
-    'same plant segment and a dig-damage root cause. Given they were all ' +
-    'reported inside a quarter hour, they are almost certainly one event ' +
-    'rather than twelve.',
-};
+// One reply. The mock exists to exercise UI states, not to impersonate
+// several vendors.
+const REPLY =
+  'Twelve fiber incidents are open around Dallas. Nine share a root cause ' +
+  'of third-party dig damage on the same plant segment, and the timing ' +
+  'fits a single upstream break rather than unrelated failures - the ' +
+  'first was reported 42 minutes ago and the rest followed within fifteen.';
 
 const sleep = (ms, signal) =>
   new Promise((resolve, reject) => {
@@ -88,7 +73,7 @@ export async function* mockTransport({ prompt, provider, signal }) {
 
   await sleep(260, signal);
 
-  const tokens = tokenise(REPLIES[provider] ?? REPLIES.orbit);
+  const tokens = tokenise(REPLY);
   for (let i = 0; i < tokens.length; i++) {
     if (directive === 'error' && i === Math.floor(tokens.length / 3)) {
       throw new Error('the model stopped responding partway through');

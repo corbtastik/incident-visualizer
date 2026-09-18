@@ -6,6 +6,7 @@ import MessageList from '../components/chat/MessageList.jsx';
 import Composer from '../components/chat/Composer.jsx';
 import ProviderSelector from '../components/chat/ProviderSelector.jsx';
 import ChatSidebar from '../components/chat/ChatSidebar.jsx';
+import ActivityBar from '../components/chat/ActivityBar.jsx';
 import SidebarResizer, {
   SIDEBAR_DEFAULT,
   clampSidebarWidth,
@@ -55,7 +56,10 @@ export default function ChatView() {
   const [provider, setProvider] = useState(DEFAULT_PROVIDER);
   const scrollRef = useRef(null);
 
-  const { messages, isStreaming, error, send, stop, reset } = useChatStream({ provider });
+  const { messages, isStreaming, error, activity, send, stop, reset } = useChatStream({
+    provider,
+    conversationId: activeId ?? undefined,
+  });
 
   // Pinned while the reader is at the bottom; released the moment they scroll
   // away. Dragging someone back down mid-sentence is the worst thing a
@@ -193,11 +197,20 @@ export default function ChatView() {
     }
 
     const current = conversations.find((c) => c.id === conversationId);
-    const { user, assistant } = await send(text);
 
-    // One write, after the reply finishes -- never per token. A stopped or
-    // failed reply is still worth keeping, so it is persisted either way.
+    // Everything from here is wrapped. Previously an exception between send()
+    // and appendTurns became an unhandled rejection: no request, no error, no
+    // clue -- the failure mode that made this hard to find.
     try {
+      // The id is passed explicitly rather than read from the hook's closure.
+      // A conversation created moments ago is not in that closure yet, so the
+      // first message of a new chat would otherwise land in the shared
+      // "default" MCP session.
+      const { user, assistant, skipped } = await send(text, conversationId);
+      if (skipped) return; // a reply was already in flight
+
+      // One write, after the reply finishes -- never per token. A stopped or
+      // failed reply is still worth keeping, so it is persisted either way.
       const updated = await chatApi.appendTurns(conversationId, {
         turns: [user, assistant],
         title: current && current.messageCount === 0 ? text.slice(0, 48) : undefined,
@@ -209,7 +222,8 @@ export default function ChatView() {
           .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
       );
     } catch (err) {
-      setLoadError(err.message);
+      console.error('[chat] submit failed:', err);
+      setLoadError(err?.message ?? 'the message could not be sent');
     }
   };
 
@@ -271,6 +285,8 @@ export default function ChatView() {
           <MessageList messages={messages} />
         )}
       </div>
+
+      <ActivityBar activity={activity} />
 
       {!pinned && messages.length > 0 && (
         <button type="button" className="chat__jump" onClick={jumpToLatest}>

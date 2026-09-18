@@ -1,5 +1,8 @@
-// Sample sidebar data. The shape is the one persistence will use, so the
-// components do not change when this stops being static:
+// Sidebar helpers. The sample data that used to live here went when the
+// sidebar started loading from the API -- keeping fake conversations around
+// alongside real ones is only a way to confuse the two.
+//
+// The document shape, for reference:
 //
 //   project      { id, name }
 //   conversation { id, title, projectId, updatedAt, provider, messageCount }
@@ -7,54 +10,6 @@
 // projectId === DEFAULT_PROJECT means the conversation is unfiled. That is a
 // real state, not a placeholder: most chats never get filed anywhere.
 export const DEFAULT_PROJECT = 'default';
-
-export const SAMPLE_PROJECTS = [
-  { id: 'p-dallas', name: 'Dallas fiber event' },
-  { id: 'p-weekly', name: 'Weekly review' },
-];
-
-export const SAMPLE_CONVERSATIONS = [
-  {
-    id: 'c-1',
-    title: 'Fiber incidents in Dallas',
-    projectId: 'p-dallas',
-    updatedAt: '2026-09-15T14:22:00Z',
-    provider: 'claude',
-    messageCount: 4,
-  },
-  {
-    id: 'c-2',
-    title: 'Which segments share a conduit run?',
-    projectId: 'p-dallas',
-    updatedAt: '2026-09-15T13:58:00Z',
-    provider: 'orbit',
-    messageCount: 6,
-  },
-  {
-    id: 'c-3',
-    title: 'Open incidents by category',
-    projectId: 'p-weekly',
-    updatedAt: '2026-09-14T09:10:00Z',
-    provider: 'gemini',
-    messageCount: 2,
-  },
-  {
-    id: 'c-4',
-    title: 'Repair crews dispatched today',
-    projectId: DEFAULT_PROJECT,
-    updatedAt: '2026-09-15T11:04:00Z',
-    provider: 'openai',
-    messageCount: 3,
-  },
-  {
-    id: 'c-5',
-    title: 'Anything with photos attached?',
-    projectId: DEFAULT_PROJECT,
-    updatedAt: '2026-09-13T16:45:00Z',
-    provider: 'claude',
-    messageCount: 8,
-  },
-];
 
 // Short, relative, and stable enough to read at a glance. Absolute dates in a
 // sidebar are noise; the only question being asked is "how recent".

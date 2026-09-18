@@ -13,6 +13,8 @@ import makeMediaRouter from "./routes/media.js";
 import makeHeatmapRouter from "./routes/heatmap.js";
 import makeSearchExplorerRouter from "./routes/searchExplorer.js";
 import makeChatRouter from "./routes/chat.js";
+import makeChatStreamRouter from "./routes/chatStream.js";
+import { orbitLog } from "./lib/orbitLog.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || "incidents";
@@ -60,6 +62,30 @@ async function main() {
   const app = express();
   app.use(cors());
   app.use(express.json());
+
+  // Temporary: every request, to orbit.log. Diagnosing this from the server
+  // side alone has been guesswork -- this shows exactly what the browser does
+  // and does not attempt.
+  // /live is polled twice a second per category and buries everything else.
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/live")) return next();
+    const started = Date.now();
+    res.on("finish", () =>
+      orbitLog(`HTTP ${req.method} ${req.originalUrl} -> ${res.statusCode} in ${Date.now() - started}ms`)
+    );
+    next();
+  });
+
+  // Client-side errors land here so they reach the same log file. A stack
+  // trace trapped in a browser console is invisible to anyone not sitting at
+  // that machine.
+  // Unauthenticated write to a log file: acceptable on a developer machine,
+  // not somewhere it could be reached from outside.
+  app.post("/chat/client-error", (req, res) => {
+    if (process.env.NODE_ENV === "production") return res.status(404).end();
+    orbitLog(`CLIENT ERROR ${req.body?.message ?? "(none)"}\n${req.body?.stack ?? ""}`);
+    res.json({ ok: 1 });
+  });
 
   // Health check
   app.get("/health", async (_req, res) => {
@@ -124,6 +150,9 @@ async function main() {
 
   // ---- Chat history (/chat/projects, /chat/conversations) ----
   app.use(makeChatRouter({ getDb }));
+
+  // ---- Chat streaming (/chat/stream, /chat/providers) ----
+  app.use(makeChatStreamRouter());
 
   // ---- Listen ----
   app.listen(PORT, () =>

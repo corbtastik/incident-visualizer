@@ -19,7 +19,12 @@ export default function RetrievalCard({ retrieval }) {
         <span className="chat-retrieval__sep">·</span>
         <span className="chat-retrieval__mode">{mode}</span>
         <span className="chat-retrieval__sep">·</span>
-        <span className="chat-retrieval__count">{count} hits</span>
+        {/* Search transports report a hit count; a tool call has no such
+            number, so the label falls back to the mode rather than showing
+            "null hits". */}
+        <span className="chat-retrieval__count">
+          {count == null ? mode : `${count} hits`}
+        </span>
       </button>
 
       {open && (
@@ -37,13 +42,15 @@ export default function RetrievalCard({ retrieval }) {
               <div className="pipeline-step__value pipeline-step__value--small">{index}</div>
             </div>
           </div>
-          <div className="pipeline-arrow">→</div>
-          <div className="pipeline-step">
-            <div className="pipeline-step__content">
-              <div className="pipeline-step__title">Results</div>
-              <div className="pipeline-step__value">{count}</div>
+          {count != null && <div className="pipeline-arrow">→</div>}
+          {count != null && (
+            <div className="pipeline-step">
+              <div className="pipeline-step__content">
+                <div className="pipeline-step__title">Results</div>
+                <div className="pipeline-step__value">{count}</div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

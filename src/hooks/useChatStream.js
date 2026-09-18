@@ -1,5 +1,15 @@
 import { useState, useRef, useCallback } from 'react';
 import { mockTransport } from '../components/chat/transports/mock.js';
+import { sseTransport } from '../components/chat/transports/sse.js';
+
+// OrbitAI is the only provider offered, so it is the only mapping here.
+//
+// The mock fallback is kept deliberately: it is the only way to work on the
+// chat UI without burning tokens or needing the MCP server running, and the
+// only way to reach the /error, /stall and /empty states on demand. Passing
+// an unmapped provider id routes to it.
+const TRANSPORTS = { orbit: sseTransport };
+const transportFor = (provider) => TRANSPORTS[provider] ?? mockTransport;
 
 let seq = 0;
 const nextId = () => `m-${Date.now().toString(36)}-${seq++}`;
@@ -11,10 +21,14 @@ const nextId = () => `m-${Date.now().toString(36)}-${seq++}`;
  * Swapping the mock for a real transport is a one-line change here, because
  * both yield the same event shapes.
  */
-export function useChatStream({ provider, transport = mockTransport, initialMessages = [] }) {
+export function useChatStream({ provider, transport, conversationId, initialMessages = [] }) {
   const [messages, setMessages] = useState(initialMessages);
   const [isStreaming, setStreaming] = useState(false);
   const [error, setError] = useState(null);
+  // A real answer takes 45-90 seconds across 20+ tool rounds. Without this the
+  // UI shows a bare caret the whole time, and a working run is indistinguishable
+  // from a dead one -- which is exactly how this went undiagnosed.
+  const [activity, setActivity] = useState(null);
   const abortRef = useRef(null);
 
   const patchLast = useCallback((patch) => {
@@ -27,8 +41,16 @@ export function useChatStream({ provider, transport = mockTransport, initialMess
     });
   }, []);
 
-  const send = useCallback(async (text) => {
-    if (isStreaming) return;
+  // conversationIdOverride exists because the caller often knows the id
+  // before React does. A conversation created moments earlier is not yet in
+  // this closure's `conversationId` -- state updates are not synchronous --
+  // and sending without it puts the first message of every new chat into the
+  // shared "default" MCP session.
+  const send = useCallback(async (text, conversationIdOverride) => {
+    // Always resolves to a pair. Returning undefined here made the caller's
+    // `const { user, assistant } = await send(...)` throw a TypeError, which
+    // silently killed the submit with no request and nothing on screen.
+    if (isStreaming) return { user: null, assistant: null, skipped: true };
     setError(null);
 
     // Both turns are appended before the transport is touched. Waiting for the
@@ -43,8 +65,13 @@ export function useChatStream({ provider, transport = mockTransport, initialMess
       text: '',
       streaming: true,
     };
+    // Captured before the new turns are appended: the provider needs the
+    // conversation as it was, not including the empty placeholder.
+    const history = messages;
+
     setMessages((prev) => [...prev, userTurn, assistantTurn]);
     setStreaming(true);
+    setActivity({ label: 'thinking', startedAt: Date.now(), calls: 0 });
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -59,12 +86,27 @@ export function useChatStream({ provider, transport = mockTransport, initialMess
     };
 
     try {
-      for await (const event of transport({ prompt: text, provider, signal: controller.signal })) {
+      const run = transport ?? transportFor(provider);
+      for await (const event of run({
+        prompt: text,
+        provider,
+        history,
+        conversationId: conversationIdOverride ?? conversationId,
+        signal: controller.signal,
+      })) {
         switch (event.type) {
           case 'retrieval':
             track({ retrieval: event.retrieval });
+            setActivity((a) => ({
+              label: event.retrieval?.tool ?? 'working',
+              startedAt: a?.startedAt ?? Date.now(),
+              calls: (a?.calls ?? 0) + 1,
+            }));
             break;
           case 'token':
+            // First token means the model is answering rather than searching.
+            setActivity((a) => (a && a.label !== 'answering'
+              ? { ...a, label: 'answering' } : a));
             // Appended rather than replaced, so React re-renders one growing
             // string instead of rebuilding the turn on every token.
             track((last) => ({ ...last, text: last.text + event.text }));
@@ -89,11 +131,12 @@ export function useChatStream({ provider, transport = mockTransport, initialMess
       }
     } finally {
       setStreaming(false);
+      setActivity(null);
       abortRef.current = null;
     }
 
     return { user: userTurn, assistant };
-  }, [isStreaming, provider, transport, patchLast]);
+  }, [isStreaming, provider, transport, patchLast, messages, conversationId]);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -105,5 +148,5 @@ export function useChatStream({ provider, transport = mockTransport, initialMess
     setError(null);
   }, []);
 
-  return { messages, isStreaming, error, send, stop, reset };
+  return { messages, isStreaming, error, activity, send, stop, reset };
 }

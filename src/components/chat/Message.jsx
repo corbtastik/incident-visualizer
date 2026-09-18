@@ -1,7 +1,35 @@
-import React from 'react';
+import React, { memo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import RetrievalCard from './RetrievalCard.jsx';
 import { providerLabel } from './providers.js';
 import ResultChips from './ResultChips.jsx';
+
+// Memoised on the text alone: the parser runs on every render, and during a
+// stream that is once per token. Without this a long answer visibly janks as
+// it arrives.
+//
+// remark-gfm is what makes pipe tables work -- the model emits them constantly
+// and without it they render as literal rows of pipes.
+const Markdown = memo(function Markdown({ text }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        // Tables are wider than the 780px column more often than not.
+        table: ({ node, ...props }) => (
+          <div className="chat-md__table-wrap"><table {...props} /></div>
+        ),
+        // Links from a model should not navigate away silently.
+        a: ({ node, ...props }) => (
+          <a {...props} target="_blank" rel="noreferrer noopener" />
+        ),
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+  );
+});
 
 export default function Message({ message }) {
   const { role, text, retrieval, citations, streaming, provider, model, stopped, failed } = message;
@@ -32,8 +60,8 @@ export default function Message({ message }) {
           guesses. */}
       {retrieval && <RetrievalCard retrieval={retrieval} />}
 
-      <div className="chat-msg__text">
-        {text}
+      <div className="chat-msg__text chat-md">
+        <Markdown text={text} />
         {streaming && <span className="chat-msg__caret" aria-hidden="true" />}
         {stopped && <span className="chat-msg__note">stopped</span>}
         {failed && <span className="chat-msg__note chat-msg__note--failed">incomplete</span>}
