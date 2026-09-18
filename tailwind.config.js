@@ -4,11 +4,12 @@ export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      // The real stacks live in src/brand/tokens/fonts.css so that the brand
+      // pack stays the single source of truth; Tailwind just points at them.
       fontFamily: {
-        // Default UI font everywhere (except code)
-        sans: ['"Lexend Deca"', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'Apple Color Emoji', 'Segoe UI Emoji'],
-        // (optional) ensure mono stays predictable
-        mono: ['ui-monospace','SFMono-Regular','Menlo','Monaco','Consolas','"Liberation Mono"', 'monospace'],
+        sans: ['var(--font-sans)'],
+        serif: ['var(--font-serif)'],
+        mono: ['var(--font-mono)'],
       },
     },
   },

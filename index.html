@@ -3,9 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Lexend Deca -->
+    <!-- Brand faces are pulled in by src/brand/tokens/fonts.css; these only
+         open the connection early so the first paint is not blocked on it. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300..800&display=swap" rel="stylesheet">
+    <link rel="icon" href="/brand/favicon.ico" sizes="any">
     <title>Incident Map Visualizer</title>
   </head>
   <body class="min-h-screen">
